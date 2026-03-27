@@ -1,0 +1,128 @@
+class MenuManager:
+    """
+    Manages a restaurant menu with add, update, and remove functionality.
+    """
+    
+    def __init__(self):
+        """Initialize menu with default dishes."""
+        self.menu = [
+            {
+                "name": "Soup",
+                "price": 10,
+                "spice_level": "B",
+                "gluten": False
+            },
+            {
+                "name": "Hamburger",
+                "price": 15,
+                "spice_level": "A",
+                "gluten": True
+            },
+            {
+                "name": "Salad",
+                "price": 18,
+                "spice_level": "A",
+                "gluten": False
+            },
+            {
+                "name": "French Fries",
+                "price": 5,
+                "spice_level": "C",
+                "gluten": False
+            },
+            {
+                "name": "Beef bourguignon",
+                "price": 25,
+                "spice_level": "B",
+                "gluten": True
+            }
+        ]
+    
+    def add_item(self, name, price, spice, gluten):
+        """
+        Add a new dish to the menu.
+        
+        Args:
+            name: Name of the dish
+            price: Price of the dish
+            spice: Spice level (A, B, or C)
+            gluten: Boolean indicating if dish contains gluten
+        """
+        new_dish = {
+            "name": name,
+            "price": price,
+            "spice_level": spice,
+            "gluten": gluten
+        }
+        self.menu.append(new_dish)
+        print(f"✓ '{name}' has been added to the menu.")
+    
+    def update_item(self, name, price, spice, gluten):
+        """
+        Update an existing dish in the menu.
+        
+        Args:
+            name: Name of the dish to update
+            price: New price
+            spice: New spice level
+            gluten: New gluten status
+        """
+        for dish in self.menu:
+            if dish["name"] == name:
+                dish["price"] = price
+                dish["spice_level"] = spice
+                dish["gluten"] = gluten
+                print(f"✓ '{name}' has been updated.")
+                return
+        
+        print(f"⚠️  Dish '{name}' is not in the menu.")
+    
+    def remove_item(self, name):
+        """
+        Remove a dish from the menu.
+        
+        Args:
+            name: Name of the dish to remove
+        """
+        for i, dish in enumerate(self.menu):
+            if dish["name"] == name:
+                del self.menu[i]
+                print(f"✓ '{name}' has been removed from the menu.")
+                print("\nUpdated menu:")
+                self.display_menu()
+                return
+        
+        print(f"⚠️  Dish '{name}' is not in the menu.")
+    
+    def display_menu(self):
+        """Helper method to display current menu (optional but useful)."""
+        print("\n--- CURRENT MENU ---")
+        for dish in self.menu:
+            gluten_status = "Contains Gluten" if dish["gluten"] else "Gluten-Free"
+            print(f"• {dish['name']} - ${dish['price']} - Spice: {dish['spice_level']} - {gluten_status}")
+        print("-------------------\n")
+
+
+# Example usage / Testing:
+if __name__ == "__main__":
+    # Create menu manager instance
+    manager = MenuManager()
+    
+    # Display initial menu
+    print("Initial Menu:")
+    manager.display_menu()
+    
+    # Test add_item
+    manager.add_item("Pizza", 20, "B", True)
+    
+    # Test update_item (existing dish)
+    manager.update_item("Salad", 20, "A", False)
+    
+    # Test update_item (non-existing dish)
+    manager.update_item("Sushi", 30, "A", False)
+    
+    # Test remove_item (existing dish)
+    manager.remove_item("Soup")
+    
+    # Test remove_item (non-existing dish)
+    manager.remove_item("Ice Cream")

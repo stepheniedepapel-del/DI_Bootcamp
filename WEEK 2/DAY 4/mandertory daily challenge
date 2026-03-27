@@ -1,0 +1,69 @@
+import string
+import re
+
+class Text:
+    def __init__(self, text):
+        self.text = text
+
+    def word_frequency(self, word):
+        words = self.text.split()
+        count = words.count(word)
+        return count if count > 0 else None
+
+    def most_common_word(self):
+        words = self.text.split()
+        freq = {}
+        for w in words:
+            freq[w] = freq.get(w, 0) + 1
+        return max(freq, key=freq.get)
+
+    def unique_words(self):
+        words = self.text.split()
+        return list(set(words))
+
+    @classmethod
+    def from_file(cls, file_path):
+        try:
+            with open(file_path, "r") as file:
+                content = file.read()
+            return cls(content)
+        except FileNotFoundError:
+            print("Error: File not found.")
+            return cls("")
+
+
+class TextModification(Text):
+    def remove_punctuation(self):
+        translator = str.maketrans("", "", string.punctuation)
+        return self.text.translate(translator)
+
+    def remove_stop_words(self):
+        stop_words = {"a", "the", "is", "in", "at", "of", "and", "to"}
+        words = self.text.split()
+        filtered = [w for w in words if w.lower() not in stop_words]
+        return " ".join(filtered)
+
+    def remove_special_characters(self):
+        return re.sub(r"[^A-Za-z0-9\s]", "", self.text)
+
+
+def main():
+    # Example usage
+    text = Text("This is a simple simple text example.")
+    print("Word frequency 'simple':", text.word_frequency("simple"))
+    print("Most common word:", text.most_common_word())
+    print("Unique words:", text.unique_words())
+
+    # From file
+    file_text = Text.from_file("sample.txt")
+    print("File most common word:", file_text.most_common_word())
+
+    # Text modification
+    mod = TextModification("Hello!!! This, is a test... with special #characters and stop words.")
+    print("Without punctuation:", mod.remove_punctuation())
+    print("Without stop words:", mod.remove_stop_words())
+    print("Without special characters:", mod.remove_special_characters())
+
+
+if __name__ == "__main__":
+    main()
