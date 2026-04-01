@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Combined Exercises</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  section {
+    margin-bottom: 50px;
+  }
+  /* Additional styles for exercise 4 */
+  #VolumeForm input[type="number"] {
+    width: 100px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Exercise 1: Change the article</h1>
+<section>
+<article>
+    <h1> Some Facts </h1>
+    <h2> The Chocolate </h2>
+    <h3> History of the chocolate </h3>
+    <p> Chocolate is made from tropical Theobroma cacao tree seeds. 
+    Its earliest use dates back to the Olmec civilization in Mesoamerica.</p>
+    <p> After the European discovery of the Americas, chocolate became 
+    very popular in the wider world, and its demand exploded. </p>
+    <p> Chocolate has since become a popular food product that millions enjoy every day, 
+    thanks to its unique, rich, and sweet taste.</p> 
+    <p> But what effect does eating chocolate have on our health?</p> 
+</article>
+<button id="boldBtn">Make Paragraphs Bold</button>
+</section>
+
+<h1>Exercise 2: Work with forms</h1>
+<section>
+<form id="userForm">
+  <label for="fname">First name:</label><br>
+  <input type="text" id="fname" name="firstname"><br>
+  <label for="lname">Last name:</label><br>
+  <input type="text" id="lname" name="lastname"><br><br>
+  <input type="submit" value="Submit" id="submit">
+</form> 
+<ul class="usersAnswer"></ul>
+</section>
+
+<h1>Exercise 3: Transform the sentence</h1>
+<section>
+<p id="myParagraph">
+  <strong>Hello</strong> I hope you are enjoying <strong>this</strong> class. At the
+  <strong>end</strong> you <strong>will</strong> be great Developers!
+  <strong>Enjoy</strong> the <strong>JavaScript </strong> lessons
+</p>
+</section>
+
+<h1>Exercise 4: Volume of a sphere</h1>
+<section>
+<form id="VolumeForm">
+  <label for="radius">Radius</label>
+  <input type="number" id="radius" name="radius" required>
+  <label for="volume">Volume</label>
+  <input type="text" id="volume" name="volume" readonly>
+  <input type="submit" value="Calculate" id="calculateBtn">
+</form>
+</section>
+
+<script>
+  // Exercise 1: DOM manipulations
+  const article = document.querySelector('article');
+
+  // Retrieve and log the h1
+  console.log(article.querySelector('h1'));
+
+  // Remove the last paragraph
+  const paragraphs = article.querySelectorAll('p');
+  if (paragraphs.length > 0) {
+    paragraphs[paragraphs.length - 1].remove();
+  }
+
+  // Change h2 background color on click
+  const h2 = article.querySelector('h2');
+  h2.addEventListener('click', () => {
+    h2.style.backgroundColor = 'red';
+  });
+
+  // Hide h3 on click
+  const h3 = article.querySelector('h3');
+  h3.addEventListener('click', () => {
+    h3.style.display = 'none';
+  });
+
+  // Make all paragraph texts bold on button click
+  document.getElementById('boldBtn').addEventListener('click', () => {
+    const paragraphs = article.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      p.style.fontWeight = 'bold';
+    });
+  });
+
+  // Bonus: Random font size on h1 hover
+  const h1 = article.querySelector('h1');
+  h1.addEventListener('mouseover', () => {
+    const size = Math.floor(Math.random() * 101); // 0-100
+    h1.style.fontSize = size + 'px';
+  });
+
+  // Bonus: Fade out on hover over second paragraph
+  const secondPara = article.querySelectorAll('p')[1];
+  secondPara.addEventListener('mouseover', () => {
+    secondPara.style.transition = 'opacity 1s';
+    secondPara.style.opacity = 0;
+  });
+  secondPara.addEventListener('mouseout', () => {
+    secondPara.style.opacity = 1;
+  });
+
+  // Exercise 2: Form handling
+  const form = document.getElementById('userForm');
+  console.log(form); // Log form element
+
+  const inputFName = document.getElementById('fname');
+  const inputLName = document.getElementById('lname');
+  console.log(inputFName, inputLName); // Log inputs by id
+
+  const inputsByName = document.querySelectorAll('input[name]');
+  console.log(inputsByName); // Log inputs by name
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault(); // Prevent page reload
+
+    const firstName = inputFName.value.trim();
+    const lastName = inputLName.value.trim();
+
+    if (firstName && lastName) {
+      const ul = document.querySelector('.usersAnswer');
+      const liFName = document.createElement('li');
+      liFName.textContent = firstName;
+      const liLName = document.createElement('li');
+      liLName.textContent = lastName;
+      ul.appendChild(liFName);
+      ul.appendChild(liLName);
+    } else {
+      alert('Please fill in both fields');
+    }
+  });
+
+  // Exercise 3: Bold items highlight
+  let allBoldItems = [];
+
+  function getBoldItems() {
+    const paragraph = document.getElementById('myParagraph');
+    allBoldItems = paragraph.querySelectorAll('strong');
+  }
+
+  function highlight() {
+    getBoldItems();
+    allBoldItems.forEach(item => {
+      item.style.color = 'blue';
+    });
+  }
+
+  function returnItemsToDefault() {
+    getBoldItems();
+    allBoldItems.forEach(item => {
+      item.style.color = 'black';
+    });
+  }
+
+  const paragraph = document.getElementById('myParagraph');
+  paragraph.addEventListener('mouseover', highlight);
+  paragraph.addEventListener('mouseout', returnItemsToDefault);
+
+  // Exercise 4: Volume of sphere
+  document.getElementById('calculateBtn').addEventListener('click', function(e) {
+    e.preventDefault(); // prevent form submission
+    const radiusInput = document.getElementById('radius');
+    const volumeInput = document.getElementById('volume');
+
+    const radius = parseFloat(radiusInput.value);
+    if (isNaN(radius) || radius <= 0) {
+      alert('Please enter a valid radius');
+      return;
+    }
+    const volume = (4/3) * Math.PI * Math.pow(radius, 3);
+    volumeInput.value = volume.toFixed(2);
+  });
+</script>
+
+</body>
+</html>
