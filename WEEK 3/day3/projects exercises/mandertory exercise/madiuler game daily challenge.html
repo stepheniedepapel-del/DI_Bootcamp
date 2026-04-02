@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Challenge: Mad Libs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        h1 {
+            color: #fff;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        form {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        label {
+            display: inline-block;
+            width: 150px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input {
+            margin: 10px 0;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 200px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s, background 0.3s;
+        }
+        
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+        
+        #shuffle-button {
+            background: #f093fb;
+            margin-left: 10px;
+            display: none;
+        }
+        
+        #shuffle-button:hover {
+            background: #f5576c;
+        }
+        
+        #story-container {
+            margin-top: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: none;
+        }
+        
+        #story {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
+        .highlight {
+            color: #667eea;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎭 Mad Libs</h1>
+
+    <form id="libform">
+        <label for="noun">Noun:</label>
+        <input type="text" id="noun" placeholder="e.g., cat, car, pizza"><br>
+        
+        <label for="adjective">Adjective:</label>
+        <input type="text" id="adjective" placeholder="e.g., sparkly, grumpy"><br>
+        
+        <label for="person">Someone's Name:</label>
+        <input type="text" id="person" placeholder="e.g., Grandma, Batman"><br>
+        
+        <label for="verb">Verb:</label>
+        <input type="text" id="verb" placeholder="e.g., dance, explode"><br>
+        
+        <label for="place">A place:</label>
+        <input type="text" id="place" placeholder="e.g., supermarket, moon"><br>
+        
+        <button type="submit" id="lib-button">Lib it!</button>
+        <button type="button" id="shuffle-button">🎲 Shuffle Story</button>
+    </form>
+
+    <div id="story-container">
+        <h3>📖 Your Story:</h3>
+        <p id="story"></p>
+    </div>
+
+    <script src="madlibs.js"></script>
+
+</body>
+</html>

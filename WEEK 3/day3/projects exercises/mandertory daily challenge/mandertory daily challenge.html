@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Exercise 1</title>
+</head>
+<body>
+
+<article>
+    <h1> Some Facts </h1>
+    <h2> The Chocolate </h2>
+    <h3> History of the chocolate </h3>
+    <p> Chocolate is made from tropical Theobroma cacao tree seeds. 
+    Its earliest use dates back to the Olmec civilization in Mesoamerica.</p>
+    <p> After the European discovery of the Americas, chocolate became 
+    very popular in the wider world, and its demand exploded. </p>
+    <p> Chocolate has since become a popular food product that millions enjoy every day, 
+    thanks to its unique, rich, and sweet taste.</p> 
+    <p> But what effect does eating chocolate have on our health?</p> 
+</article>
+
+<button id="boldBtn">Make Paragraphs Bold</button>
+
+<script>
+  const article = document.querySelector('article');
+
+  // Retrieve and log the h1
+  console.log(article.querySelector('h1'));
+
+  // Remove the last paragraph
+  article.querySelectorAll('p')[article.querySelectorAll('p').length - 1].remove();
+
+  // Change h2 background color on click
+  const h2 = article.querySelector('h2');
+  h2.addEventListener('click', () => {
+    h2.style.backgroundColor = 'red';
+  });
+
+  // Hide h3 on click
+  const h3 = article.querySelector('h3');
+  h3.addEventListener('click', () => {
+    h3.style.display = 'none';
+  });
+
+  // Make all paragraph texts bold on button click
+  document.getElementById('boldBtn').addEventListener('click', () => {
+    const paragraphs = article.querySelectorAll('p');
+    paragraphs.forEach(p => {
+      p.style.fontWeight = 'bold';
+    });
+  });
+
+  // Bonus: Random font size on h1 hover
+  const h1 = article.querySelector('h1');
+  h1.addEventListener('mouseover', () => {
+    const size = Math.floor(Math.random() * 101); // 0-100
+    h1.style.fontSize = size + 'px';
+  });
+
+  // Bonus: Fade out on hover over second paragraph
+  const secondPara = article.querySelectorAll('p')[1];
+  secondPara.addEventListener('mouseover', () => {
+    secondPara.style.transition = 'opacity 1s';
+    secondPara.style.opacity = 0;
+  });
+  secondPara.addEventListener('mouseout', () => {
+    secondPara.style.opacity = 1;
+  });
+</script>
+
+</body>
+</html>
