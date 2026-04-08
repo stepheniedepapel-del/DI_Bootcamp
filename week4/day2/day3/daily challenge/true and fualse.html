@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>True or False Challenge</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; margin-bottom: 20px; }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        .true { border-left: 4px solid #28a745; }
+        .false { border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔍 allTruthy() Results</h1>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const allTruthy = (...args) => args.every(Boolean);
+
+        const tests = [
+            [true, true, true],
+            [true, false, true],
+            [5, 4, 3, 2, 1, 0],
+            [1, "hello", [], {}],
+            ["", 1, 2]
+        ];
+
+        const resultsDiv = document.getElementById('results');
+        
+        tests.forEach(test => {
+            const result = allTruthy(...test);
+            const div = document.createElement('div');
+            div.className = `result ${result}`;
+            div.innerHTML = `
+                <strong>allTruthy(${test.join(', ')})</strong><br>
+                Result: <strong>${result}</strong>
+            `;
+            resultsDiv.appendChild(div);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result - Display Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .result-container {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #f5576c;
+            margin-bottom: 30px;
+        }
+
+        #display-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 20px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #display-section h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #display-section p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .data-label {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        .no-data {
+            background: #ff6b6b !important;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 30px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            border-radius: 25px;
+            transition: all 0.3s;
+        }
+
+        a:hover {
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="result-container">
+        <h1>✅ Data Received</h1>
+        
+        <!-- Section where data will be displayed using DOM -->
+        <section id="display-section">
+            <p>Loading data...</p>
+        </section>
+        
+        <a href="form.html">← Back to Form</a>
+    </div>
+
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the section element where we'll display data
+            const displaySection = document.getElementById('display-section');
+            
+            // Parse URL parameters to get the form data
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Get individual parameters
+            const name = urlParams.get('name');
+            const lastname = urlParams.get('lastname');
+            
+            // Check if we have data
+            if (name && lastname) {
+                // Clear the loading text
+                displaySection.innerHTML = '';
+                
+                // Create and append elements to display the data
+                // First Name
+                const nameLabel = document.createElement('p');
+                nameLabel.className = 'data-label';
+                nameLabel.textContent = 'First Name';
+                displaySection.appendChild(nameLabel);
+                
+                const nameValue = document.createElement('h2');
+                nameValue.textContent = name;
+                displaySection.appendChild(nameValue);
+                
+                // Separator
+                const separator = document.createElement('div');
+                separator.style.width = '50px';
+                separator.style.height = '2px';
+                separator.style.background = 'rgba(255,255,255,0.5)';
+                separator.style.margin = '15px 0';
+                displaySection.appendChild(separator);
+                
+                // Last Name
+                const lastnameLabel = document.createElement('p');
+                lastnameLabel.className = 'data-label';
+                lastnameLabel.textContent = 'Last Name';
+                displaySection.appendChild(lastnameLabel);
+                
+                const lastnameValue = document.createElement('h2');
+                lastnameValue.textContent = lastname;
+                displaySection.appendChild(lastnameValue);
+                
+            } else {
+                // No data found - show error message
+                displaySection.classList.add('no-data');
+                displaySection.innerHTML = `
+                    <h2>⚠️ No Data</h2>
+                    <p>Please fill out the form first</p>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
