@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Challenge: HTML Form</title>
+    <style>
+        /* Adding a little styling to make it look clean */
+        body {
+            font-family: sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+        form {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            display: inline-block;
+        }
+        input {
+            display: block;
+            margin-bottom: 10px;
+            padding: 8px;
+        }
+        #output {
+            font-family: monospace;
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            color: #d63384; /* Styled to look like typical JSON output */
+            min-height: 20px;
+            border: 1px dashed #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>User Information Form</h2>
+    
+    <form id="userForm">
+        <label for="firstname">First Name:</label>
+        <input type="text" id="firstname" placeholder="Enter Name" required>
+        
+        <label for="lastname">Last Name:</label>
+        <input type="text" id="lastname" placeholder="Enter Last Name" required>
+        
+        <button type="submit">Send</button>
+    </form>
+
+    <h3>Output (JSON String):</h3>
+    <div id="output">The JSON result will appear here...</div>
+
+    <script>
+        // Wait for the DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('userForm');
+            const outputDiv = document.getElementById('output');
+
+            form.addEventListener('submit', function(event) {
+                // 1. Stop the page from refreshing
+                event.preventDefault();
+
+                // 2. Grab values from the input fields
+                const firstName = document.getElementById('firstname').value;
+                const lastName = document.getElementById('lastname').value;
+
+                // 3. Create a JavaScript Object
+                const dataObject = {
+                    name: firstName,
+                    lastname: lastName
+                };
+
+                // 4. Convert Object to JSON string
+                const jsonResult = JSON.stringify(dataObject);
+
+                // 5. Append (display) the string on the DOM
+                outputDiv.textContent = jsonResult;
+            });
+        });
+    </script>
+
+</body>
+</html>
