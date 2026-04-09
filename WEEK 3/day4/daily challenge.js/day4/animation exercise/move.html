@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    #container {
+      width: 400px;
+      height: 400px;
+      position: relative;
+      background: yellow;
+    }
+    #animate {
+      width: 50px;
+      height: 50px;
+      position: absolute;
+      background-color: red;
+    }
+    </style>
+</head>
+<body>
+    <p><button onclick="myMove()">Click Me</button></p>
+    <div id="container">
+      <div id="animate"></div>
+    </div>
+
+    <script>
+        function myMove() {
+            // Get the elements
+            const animateBox = document.getElementById('animate');
+            const container = document.getElementById('container');
+            
+            // Starting position
+            let position = 0;
+            
+            // Calculate the maximum position (container width - box width)
+            const maxPosition = container.offsetWidth - animateBox.offsetWidth;
+            
+            // Start the interval - move 1px every millisecond
+            const intervalId = setInterval(function() {
+                // Check if we've reached the end
+                if (position >= maxPosition) {
+                    clearInterval(intervalId); // Stop the animation
+                    console.log("Animation complete!");
+                } else {
+                    position++; // Increment position by 1px
+                    animateBox.style.left = position + 'px'; // Apply new position
+                }
+            }, 1); // 1 millisecond interval
+        }
+    </script>
+</body>
+</html>

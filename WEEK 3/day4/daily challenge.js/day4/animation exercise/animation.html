@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    p {
+      background: yellow;
+      color: red;
+    }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <button id="clear">Clear Interval</button>
+
+    <script>
+        // ==================== PART I ====================
+        // Call a function after 2 seconds that alerts "Hello World"
+        
+        setTimeout(function() {
+            alert("Hello World");
+        }, 2000);
+        
+        
+        // ==================== PART II ====================
+        // Call a function after 2 seconds that adds a paragraph to the container
+        
+        setTimeout(function() {
+            const container = document.getElementById('container');
+            const paragraph = document.createElement('p');
+            paragraph.textContent = "Hello World";
+            container.appendChild(paragraph);
+        }, 2000);
+        
+        
+        // ==================== PART III ====================
+        // Call a function every 2 seconds that adds a paragraph
+        // Clear interval when button is clicked OR when 5 paragraphs exist
+        
+        const container = document.getElementById('container');
+        const clearButton = document.getElementById('clear');
+        
+        let intervalId = setInterval(function() {
+            // Create and add new paragraph
+            const paragraph = document.createElement('p');
+            paragraph.textContent = "Hello World";
+            container.appendChild(paragraph);
+            
+            // Check if we have 5 paragraphs - if so, clear the interval
+            const paragraphs = container.getElementsByTagName('p');
+            if (paragraphs.length >= 5) {
+                clearInterval(intervalId);
+                console.log("Interval stopped: 5 paragraphs reached");
+            }
+            
+        }, 2000);
+        
+        // Clear interval when button is clicked
+        clearButton.addEventListener('click', function() {
+            clearInterval(intervalId);
+            console.log("Interval stopped: button clicked");
+        });
+    </script>
+</body>
+</html>
