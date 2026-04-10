@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunrise Comparison - Two Cities</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .city-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .city-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .city-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .sunrise-time {
+            color: #ff9800;
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .preset-btn {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 8px 15px;
+            border: 1px solid #1976d2;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-bottom: 20px;
+            width: auto;
+        }
+        
+        .preset-btn:hover {
+            background: #1976d2;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌅 Sunrise Comparator</h1>
+        <p class="subtitle">Compare sunrise times between two cities</p>
+        
+        <button type="button" class="preset-btn" onclick="fillParisNY()">
+            🌍 Auto-fill: Paris & New York
+        </button>
+        
+        <form id="sunriseForm">
+            <!-- City 1 -->
+            <div class="city-section">
+                <div class="city-title">City 1</div>
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="lat1" 
+                        placeholder="Latitude (e.g., 48.864716)" 
+                        required
+                    >
+                    <input 
+                        type="text" 
+                        id="lng1" 
+                        placeholder="Longitude (e.g., 2.349014)" 
+                        required
+                    >
+                </div>
+            </div>
+            
+            <!-- City 2 -->
+            <div class="city-section">
+                <div class="city-title">City 2</div>
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="lat2" 
+                        placeholder="Latitude (e.g., 40.730610)" 
+                        required
+                    >
+                    <input 
+                        type="text" 
+                        id="lng2" 
+                        placeholder="Longitude (e.g., -73.935242)" 
+                        required
+                    >
+                </div>
+            </div>
+            
+            <button type="submit" id="submitBtn">Get Sunrise Times</button>
+        </form>
+        
+        <div class="loading" id="loading">⏳ Fetching sunrise data...</div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="results" id="results">
+            <h3>☀️ Sunrise Results</h3>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

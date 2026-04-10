@@ -1,0 +1,186 @@
+// API endpoint for sunrise-sunset API
+const SUNRISE_API_URL = 'https://api.sunrise-sunset.org/json';
+
+/**
+ * Fetch sunrise data for a specific location
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {Promise<Object>} - Sunrise data
+ */
+async function fetchSunrise(lat, lng) {
+    try {
+        const url = `${SUNRISE_API_URL}?lat=${lat}&lng=${lng}&formatted=0`;
+        
+        const response = await fetch(url);
+        
+        // Check if response is successful
+        if (!response.ok) {
+            throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Check API status
+        if (data.status !== 'OK') {
+            throw new Error(`API Error: ${data.status}`);
+        }
+        
+        return data.results;
+        
+    } catch (error) {
+        console.error(`Error fetching sunrise for ${lat}, ${lng}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Format ISO time string to readable format
+ * @param {string} isoString - ISO 8601 time string
+ * @returns {string} - Formatted time
+ */
+function formatTime(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+    });
+}
+
+/**
+ * Get city name from coordinates (simplified - in real app, use geocoding API)
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {string} - City identifier
+ */
+function getCityName(lat, lng) {
+    // Check for known coordinates
+    if (Math.abs(lat - 48.864716) < 0.1 && Math.abs(lng - 2.349014) < 0.1) {
+        return 'Paris, France 🇫🇷';
+    }
+    if (Math.abs(lat - 40.730610) < 0.1 && Math.abs(lng - (-73.935242)) < 0.1) {
+        return 'New York, USA 🇺🇸';
+    }
+    return `Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+}
+
+/**
+ * Main function to fetch and display sunrise times for both cities
+ * Uses Promise.all() to wait for both requests simultaneously
+ */
+async function getBothSunrises(lat1, lng1, lat2, lng2) {
+    try {
+        // Create both promises - they start executing immediately
+        const promise1 = fetchSunrise(lat1, lng1);
+        const promise2 = fetchSunrise(lat2, lng2);
+        
+        // Promise.all() waits for BOTH promises to resolve
+        // If either fails, it goes to catch block immediately
+        const [sunriseData1, sunriseData2] = await Promise.all([promise1, promise2]);
+        
+        return {
+            city1: {
+                name: getCityName(lat1, lng1),
+                sunrise: sunriseData1.sunrise,
+                sunset: sunriseData1.sunset
+            },
+            city2: {
+                name: getCityName(lat2, lng2),
+                sunrise: sunriseData2.sunrise,
+                sunset: sunriseData2.sunset
+            }
+        };
+        
+    } catch (error) {
+        throw new Error(`Failed to fetch sunrise data: ${error.message}`);
+    }
+}
+
+/**
+ * Display results on the page
+ */
+function displayResults(data) {
+    const resultsDiv = document.getElementById('results');
+    const resultsContent = document.getElementById('resultsContent');
+    
+    resultsContent.innerHTML = `
+        <div class="result-item">
+            <div class="city-name">${data.city1.name}</div>
+            <div class="sunrise-time">🌅 ${formatTime(data.city1.sunrise)}</div>
+            <small>Sunset: ${formatTime(data.city1.sunset)}</small>
+        </div>
+        <div class="result-item">
+            <div class="city-name">${data.city2.name}</div>
+            <div class="sunrise-time">🌅 ${formatTime(data.city2.sunrise)}</div>
+            <small>Sunset: ${formatTime(data.city2.sunset)}</small>
+        </div>
+    `;
+    
+    resultsDiv.classList.add('show');
+}
+
+/**
+ * Display error message
+ */
+function showError(message) {
+    const errorDiv = document.getElementById('error');
+    errorDiv.textContent = `❌ ${message}`;
+    errorDiv.classList.add('show');
+    
+    setTimeout(() => {
+        errorDiv.classList.remove('show');
+    }, 5000);
+}
+
+/**
+ * Handle form submission
+ */
+async function handleSubmit(event) {
+    event.preventDefault();
+    
+    // Get input values
+    const lat1 = parseFloat(document.getElementById('lat1').value);
+    const lng1 = parseFloat(document.getElementById('lng1').value);
+    const lat2 = parseFloat(document.getElementById('lat2').value);
+    const lng2 = parseFloat(document.getElementById('lng2').value);
+    
+    // Validate inputs
+    if (isNaN(lat1) || isNaN(lng1) || isNaN(lat2) || isNaN(lng2)) {
+        showError('Please enter valid numbers for all coordinates');
+        return;
+    }
+    
+    // Show loading, hide previous results
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('results').classList.remove('show');
+    document.getElementById('error').classList.remove('show');
+    document.getElementById('submitBtn').disabled = true;
+    
+    try {
+        // Fetch both sunrises using Promise.all()
+        const results = await getBothSunrises(lat1, lng1, lat2, lng2);
+        
+        // Display only when BOTH are resolved (as per requirement)
+        displayResults(results);
+        
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        document.getElementById('loading').classList.remove('show');
+        document.getElementById('submitBtn').disabled = false;
+    }
+}
+
+/**
+ * Auto-fill Paris and New York coordinates
+ */
+function fillParisNY() {
+    document.getElementById('lat1').value = '48.864716';
+    document.getElementById('lng1').value = '2.349014';
+    document.getElementById('lat2').value = '40.730610';
+    document.getElementById('lng2').value = '-73.935242';
+}
+
+// Event listeners
+document.getElementById('sunriseForm').addEventListener('submit', handleSubmit);

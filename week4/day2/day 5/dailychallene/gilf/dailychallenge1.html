@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giphy Search App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 300px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .search-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .search-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .delete-all-btn {
+            background-color: #f44336;
+            color: white;
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .delete-all-btn:hover {
+            background-color: #da190b;
+        }
+        
+        .gif-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .gif-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .gif-item img {
+            max-width: 300px;
+            border-radius: 5px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .delete-btn {
+            background-color: #ff9800;
+            color: white;
+            padding: 5px 15px;
+            font-size: 14px;
+        }
+        
+        .delete-btn:hover {
+            background-color: #e68900;
+        }
+        
+        .error-message {
+            color: #f44336;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎭 Giphy Search App</h1>
+    
+    <!-- Search Form -->
+    <form class="search-form" id="searchForm">
+        <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Enter category (e.g., sun, cat, funny)" 
+            required
+        >
+        <button type="submit" class="search-btn">Search GIF</button>
+    </form>
+    
+    <!-- Delete All Button -->
+    <button class="delete-all-btn" id="deleteAllBtn">DELETE ALL</button>
+    
+    <!-- Error Message Container -->
+    <div id="errorContainer"></div>
+    
+    <!-- GIFs Container -->
+    <div class="gif-container" id="gifContainer"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
