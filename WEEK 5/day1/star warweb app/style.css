@@ -1,0 +1,28 @@
+body {
+    background-color: #222;
+    color: #FFE81F; /* Classic Star Wars Yellow */
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    text-align: center;
+    border: 2px solid #FFE81F;
+    padding: 2rem;
+    border-radius: 10px;
+    background: #000;
+}
+
+#fetch-button {
+    background-color: #FFE81F;
+    color: #000;
+    padding: 10px 20px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+}

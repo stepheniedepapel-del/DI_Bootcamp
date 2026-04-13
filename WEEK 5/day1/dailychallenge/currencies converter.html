@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Converter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>💱 Currency Converter</h1>
+        
+        <div class="converter-box">
+            <!-- From Currency -->
+            <div class="currency-group">
+                <label for="from-currency">From</label>
+                <select id="from-currency">
+                    <option value="">Select currency...</option>
+                </select>
+                <input type="number" id="amount" placeholder="Enter amount" min="0" step="0.01">
+            </div>
+
+            <!-- Switch Button -->
+            <button id="switch-btn" class="switch-btn" title="Switch currencies">
+                ⇄
+            </button>
+
+            <!-- To Currency -->
+            <div class="currency-group">
+                <label for="to-currency">To</label>
+                <select id="to-currency">
+                    <option value="">Select currency...</option>
+                </select>
+            </div>
+
+            <!-- Convert Button -->
+            <button id="convert-btn" class="convert-btn">Convert</button>
+
+            <!-- Result Display -->
+            <div id="result" class="result hidden">
+                <div class="conversion-info">
+                    <span id="conversion-rate"></span>
+                </div>
+                <div class="converted-amount">
+                    <span id="converted-value"></span>
+                </div>
+                <div class="update-time">
+                    <span id="last-updated"></span>
+                </div>
+            </div>
+
+            <!-- Error Display -->
+            <div id="error" class="error hidden"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
