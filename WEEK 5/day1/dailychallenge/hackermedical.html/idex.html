@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Medical Accessory App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <h1>Medical Accessory App</h1>
+        <p>Connecting Doctors & Patients | Health Monitoring | Education</p>
+    </header>
+
+    <main>
+        <!-- Login -->
+        <section id="login">
+            <h2>Patient Login</h2>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+            <p id="loginStatus"></p>
+        </section>
+
+        <!-- Doctor-Patient Chat -->
+        <section id="chat" class="hidden">
+            <h2>Doctor–Patient Chat</h2>
+            <div id="chatBox"></div>
+            <input type="text" id="chatInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </section>
+
+        <!-- Health Monitoring -->
+        <section id="monitor" class="hidden">
+            <h2>Health Monitoring</h2>
+            <p id="heartRate">Heart Rate: -- bpm</p>
+            <p id="bloodPressure">Blood Pressure: -- / -- mmHg</p>
+        </section>
+
+        <!-- Healthcare Education -->
+        <section id="education" class="hidden">
+            <h2>Healthcare Education</h2>
+            <div id="educationContent">
+                <p><strong>Balanced Diet:</strong> Eat fruits, vegetables, proteins, and whole grains daily.</p>
+                <p><strong>Disease Outbreaks:</strong> Stay updated with health alerts and practice hygiene.</p>
+                <p><strong>Prevention:</strong> Exercise regularly, avoid smoking, and get vaccinated.</p>
+                <p><strong>Signs & Symptoms:</strong> Learn early warning signs of common diseases.</p>
+            </div>
+        </section>
+
+        <!-- Doctor Call Terminal -->
+        <section id="terminal" class="hidden">
+            <h2>Doctor Call Terminal</h2>
+            <div id="terminalWindow"></div>
+            <button onclick="callDoctorTerminal()">📞 Call Doctor</button>
+        </section>
+    </main>
+
+    <script src="hacker.js"></script>
+</body>
+
+</html>
