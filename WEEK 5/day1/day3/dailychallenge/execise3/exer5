@@ -1,0 +1,75 @@
+// Base interface with readonly and optional properties
+interface Product {
+    readonly name: string;      // Immutable
+    price: number;              // Mutable
+    discount?: number;          // Optional (percentage 0-1)
+}
+
+// Extended interface
+interface Electronics extends Product {
+    warrantyPeriod: number;     // Months
+}
+
+// Class implementing the extended interface
+class Smartphone implements Electronics {
+    readonly name: string;
+    price: number;
+    discount?: number;
+    warrantyPeriod: number;
+    brand: string;
+
+    constructor(name: string, price: number, brand: string, warranty: number, discount?: number) {
+        this.name = name;
+        this.price = price;
+        this.brand = brand;
+        this.warrantyPeriod = warranty;
+        this.discount = discount;
+    }
+
+    // Calculate price after discount
+    getFinalPrice(): number {
+        if (this.discount && this.discount > 0 && this.discount <= 1) {
+            return this.price * (1 - this.discount);
+        }
+        return this.price;
+    }
+
+    getProductInfo(): string {
+        const discountInfo = this.discount ? `${(this.discount * 100).toFixed(0)}% off` : "No discount";
+        return `${this.brand} ${this.name} - Final Price: $${this.getFinalPrice().toFixed(2)} (${discountInfo}), Warranty: ${this.warrantyPeriod} months`;
+    }
+
+    applyDiscount(discount: number): void {
+        this.discount = discount;
+    }
+
+    updatePrice(newPrice: number): void {
+        this.price = newPrice;
+    }
+}
+
+// Test Exercise 5
+console.log("\n" + "=".repeat(60));
+console.log("EXERCISE 5: Extending Multiple Interfaces");
+console.log("=".repeat(60));
+
+const phone1 = new Smartphone("iPhone 15 Pro", 999, "Apple", 12, 0.1); // 10% discount
+const phone2 = new Smartphone("Galaxy S24", 899, "Samsung", 24);        // No discount
+const phone3 = new Smartphone("Pixel 8", 699, "Google", 12, 0.15);      // 15% discount
+
+console.log(phone1.getProductInfo());
+console.log(phone2.getProductInfo());
+console.log(phone3.getProductInfo());
+
+// Update price (mutable)
+phone1.updatePrice(1099);
+console.log(`\nAfter price update: ${phone1.getProductInfo()}`);
+
+// Apply discount later
+phone2.applyDiscount(0.2);
+console.log(`After adding discount: ${phone2.getProductInfo()}`);
+
+// Cannot change name (readonly)
+// phone1.name = "iPhone 16"; // ❌ Error: Cannot assign to 'name' because it is a read-only property
+
+console.log(`\nImmutable name: ${phone1.name}`);
