@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Emoji Guessing Game</title>
+</head>
+<body>
+<h1>Guess the Emoji!</h1>
+<div id="game">
+  <div id="emoji" style="font-size: 100px;"></div>
+  <form id="guessForm">
+    <div id="options"></div>
+    <button type="submit">Guess</button>
+  </form>
+  <div id="feedback"></div>
+  <div>Score: <span id="score">0</span></div>
+</div>
+<script>
+let currentCorrect = '';
+let score = 0;
+
+function fetchNewEmoji() {
+  fetch('/api/new-emoji')
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('emoji').textContent = data.emoji;
+      currentCorrect = data.correct;
+      const optionsDiv = document.getElementById('options');
+      optionsDiv.innerHTML = '';
+      data.options.forEach(opt => {
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="radio" name="guess" value="${opt}"> ${opt}`;
+        optionsDiv.appendChild(label);
+        optionsDiv.appendChild(document.createElement('br'));
+      });
+      document.getElementById('feedback').textContent = '';
+    });
+}
+
+document.getElementById('guessForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const selected = document.querySelector('input[name="guess"]:checked');
+  if (!selected) return;
+  const guess = selected.value;
+  if (guess === currentCorrect) {
+    score++;
+    document.getElementById('feedback').textContent = 'Correct!';
+  } else {
+    document.getElementById('feedback').textContent = `Wrong! The correct answer was ${currentCorrect}.`;
+  }
+  document.getElementById('score').textContent = score;
+  fetchNewEmoji();
+});
+
+fetchNewEmoji();
+</script>
+</body>
+</html>
