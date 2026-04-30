@@ -1,0 +1,14 @@
+const axios = require('axios');
+
+async function fetchPosts() {
+    try {
+        const response = await axios.get('https://jsonplaceholder.typicode.com/posts');
+        response.data.forEach((post, i) => {
+            console.log(`${i + 1}. ${post.title}`);
+        });
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+}
+
+module.exports = fetchPosts;

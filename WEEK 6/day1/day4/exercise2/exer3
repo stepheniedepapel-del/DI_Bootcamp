@@ -1,0 +1,13 @@
+const { format, addDays } = require('date-fns');
+
+function performDateOperations() {
+    const current = new Date();
+    const future = addDays(current, 5);
+    const formatted = format(future, 'yyyy-MM-dd HH:mm:ss');
+    console.log('Current:', current);
+    console.log('+5 days:', future);
+    console.log('Formatted:', formatted);
+    return formatted;
+}
+
+module.exports = performDateOperations;

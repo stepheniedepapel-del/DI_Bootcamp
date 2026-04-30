@@ -1,0 +1,3 @@
+Hello! This is the file content for the Daily Challenge.
+You are learning Node.js file operations.
+Keep up the great work! 🚀
