@@ -1,0 +1,16 @@
+{
+  "name": "daily-challenge-auth",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js",
+    "init-db": "node server/config/initDb.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express": "^4.18.2",
+    "knex": "^3.1.0",
+    "sqlite3": "^5.1.7"
+  }
+}

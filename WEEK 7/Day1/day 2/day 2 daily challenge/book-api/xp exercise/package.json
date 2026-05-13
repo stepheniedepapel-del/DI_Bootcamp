@@ -1,0 +1,17 @@
+{
+  "name": "book-api",
+  "version": "1.0.0",
+  "description": "Basic CRUD API for managing books with database connection",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "migrate": "knex migrate:latest",
+    "seed": "knex seed:run"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "knex": "^3.1.0",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1"
+  }
+}

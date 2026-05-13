@@ -1,0 +1,48 @@
+import db from '../config/db.js';
+
+// Uses a transaction to ensure both tables are updated together
+const createUserTransaction = async (userData, hashedPassword) => {
+  return await db.transaction(async (trx) => {
+    // Insert into users table
+    const [userId] = await trx('users').insert({
+      email: userData.email,
+      username: userData.username,
+      first_name: userData.first_name,
+      last_name: userData.last_name
+    });
+
+    // Insert into hashpwd table
+    await trx('hashpwd').insert({
+      username: userData.username,
+      password: hashedPassword
+    });
+
+    return userId;
+  });
+};
+
+const findPasswordByUsername = async (username) => {
+  return await db('hashpwd').where({ username }).first();
+};
+
+const getAllUsers = async () => {
+  // We omit the password table for security
+  return await db('users').select('id', 'email', 'username', 'first_name', 'last_name');
+};
+
+const getUserById = async (id) => {
+  return await db('users').where({ id }).first();
+};
+
+const updateUser = async (id, userData) => {
+  await db('users').where({ id }).update(userData);
+  return await db('users').where({ id }).first();
+};
+
+export default {
+  createUserTransaction,
+  findPasswordByUsername,
+  getAllUsers,
+  getUserById,
+  updateUser
+};
