@@ -1,0 +1,32 @@
+.AutoCompletedText {
+  width: 250px;
+  margin: 20px auto;
+  font-family: Arial, sans-serif;
+}
+
+.AutoCompletedText input {
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+.AutoCompletedText ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.AutoCompletedText li {
+  padding: 10px;
+  cursor: pointer;
+  background-color: #fff;
+}
+
+.AutoCompletedText li:hover {
+  background-color: #f0f0f0;
+}

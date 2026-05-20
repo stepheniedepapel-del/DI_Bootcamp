@@ -1,0 +1,75 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+const WeatherContext = createContext();
+const API_KEY = "YOUR_ACCUWEATHER_API_KEY";
+
+export function WeatherProvider({ children }) {
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('weather_favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [currentCity, setCurrentCity] = useState({ id: '215854', name: 'Tel Aviv' });
+  const [isCelsius, setIsCelsius] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+
+  // Auto-detect location on startup using browser Geolocation API
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        setLoading(true);
+        const { latitude, longitude } = position.coords;
+        try {
+          // Resolve lat/lon coordinates into an AccuWeather Location Key
+          const geoRes = await fetch(
+            `accuweather.com{API_KEY}&q=${latitude},${longitude}`
+          );
+          if (!geoRes.ok) throw new Error("Location resolution failed");
+          const geoData = await geoRes.json();
+          
+          setCurrentCity({
+            id: geoData.Key,
+            name: geoData.LocalizedName
+          });
+        } catch (err) {
+          setApiError("Could not resolve your local coordinates. Using default city.");
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        setApiError("Geolocation access denied. Displaying default location (Tel Aviv).");
+      }
+    );
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('weather_favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = (city) => {
+    setFavorites(prev => 
+      prev.some(f => f.id === city.id) 
+        ? prev.filter(f => f.id !== city.id) 
+        : [...prev, city]
+    );
+  };
+
+  return (
+    <WeatherContext.Provider value={{
+      favorites, currentCity, setCurrentCity, 
+      isCelsius, setIsCelsius, isDarkMode, setIsDarkMode, 
+      toggleFavorite, apiError, setApiError, loading, API_KEY
+    }}>
+      <div className={isDarkMode ? 'dark-theme' : 'light-theme'}>
+        {children}
+      </div>
+    </WeatherContext.Provider>
+  );
+}
+
+export const useWeather = () => useContext(WeatherContext);
