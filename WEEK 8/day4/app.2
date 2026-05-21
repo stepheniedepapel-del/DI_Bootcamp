@@ -1,0 +1,23 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import GalleryPage from './components/GalleryPage';
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Default landing redirects to the first category */}
+        <Route path="/" element={<Navigate to="/mountain" replace />} />
+        
+        {/* Category Routes */}
+        <Route path="/mountain" element={<GalleryPage defaultQuery="mountain" />} />
+        <Route path="/beaches" element={<GalleryPage defaultQuery="beaches" />} />
+        <Route path="/birds" element={<GalleryPage defaultQuery="birds" />} />
+        <Route path="/food" element={<GalleryPage defaultQuery="food" />} />
+        
+        {/* Dynamic Search Route */}
+        <Route path="/search/:searchQuery" element={<GalleryPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}

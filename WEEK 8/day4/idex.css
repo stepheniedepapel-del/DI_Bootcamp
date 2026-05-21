@@ -1,0 +1,8 @@
+/* Zoom and scale image smoothly on card container hover */
+.img-card img {
+  transition: transform 0.4s ease-in-out;
+}
+
+.img-card:hover img {
+  transform: scale(1.15);
+}
