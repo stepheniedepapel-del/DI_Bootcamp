@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React-Redux Todo List with Authentication</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Redux & React-Redux -->
+    <script src="https://unpkg.com/redux@4.2.1/dist/redux.min.js"></script>
+    <script src="https://unpkg.com/react-redux@8.1.3/dist/react-redux.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+        }
+        
+        .auth-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .todo-item {
+            transition: all 0.25s ease;
+        }
+        
+        .todo-item:hover {
+            background-color: #f8fafc;
+            transform: translateX(4px);
+        }
+        
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+        
+        .checkbox-custom {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .checkbox-custom:checked {
+            background-color: #10b981;
+            border-color: #10b981;
+        }
+        
+        .checkbox-custom:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(30px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        
+        .scale-in {
+            animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        .input-group:focus-within label {
+            color: #4f46e5;
+        }
+        
+        .input-group:focus-within input {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        
+        .toast {
+            animation: toastSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes toastSlide {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .toast-exit {
+            animation: toastExit 0.3s ease-out forwards;
+        }
+        
+        @keyframes toastExit {
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .protected-fade {
+            animation: protectedFade 0.5s ease-out;
+        }
+        
+        @keyframes protectedFade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { createStore, combineReducers } = Redux;
+        const { Provider, connect } = ReactRedux;
+        const { useState, useEffect, useRef, createContext } = React;
+
+        // ==========================================
+        // MOCK AUTH SERVICE (Simulates API)
+        // ==========================================
+        const MockAuthService = {
+            // Simulated database in localStorage
+            DB_KEY: 'focusguard_auth_db',
+            SESSION_KEY: 'focusguard_session',
+            
+            getDB() {
+                const raw = localStorage.getItem(this.DB_KEY);
+                return raw ? JSON.parse(raw) : { users: [] };
+            },
+            
+            saveDB(db) {
+                localStorage.setItem(this.DB_KEY, JSON.stringify(db));
+            },
+            
+            // Hash password (simple simulation)
+            hashPassword(password) {
+                let hash = 0;
+                for (let i = 0; i < password.length; i++) {
+                    const char = password.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return 'hash_' + Math.abs(hash).toString(16);
+            },
+            
+            // Simulate network delay
+            delay(ms = 800) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            },
+            
+            async register(username, email, password) {
+                await this.delay();
+                const db = this.getDB();
+                
+                // Validation
+                if (!username || username.length < 3) {
+                    throw new Error('Username must be at least 3 characters');
+                }
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    throw new Error('Please enter a valid email address');
+                }
+                if (!password || password.length < 6) {
+                    throw new Error('Password must be at least 6 characters');
+                }
+                
+                // Check existing
+                if (db.users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+                    throw new Error('An account with this email already exists');
+                }
+                if (db.users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+                    throw new Error('Username is already taken');
+                }
+                
+                const user = {
+                    id: 'user_' + Date.now(),
+                    username,
+                    email: email.toLowerCase(),
+                    passwordHash: this.hashPassword(password),
+                    createdAt: new Date().toISOString(),
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`
+                };
+                
+                db.users.push(user);
+                this.saveDB(db);
+                
+                // Return user without password
+                const { passwordHash, ...safeUser } = user;
+                return { user: safeUser, token: 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2) };
+            },
+            
+            async login(email, password) {
+                await this.delay();
+                const db = this.getDB();
+                
+                if (!email || !password) {
+                    throw new Error('Please fill in all fields');
+                }
+                
+                const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+                if (!user) {
+                    throw new Error('No account found with this email');
+                }
+                
+                if (user.passwordHash !== this.hashPassword(password)) {
+                    throw new Error('Incorrect password');
+                }
+                
+                const { passwordHash, ...safeUser } = user;
+                return { user: safeUser, token: 'token_' + Date.now() + '_' + Math.random().toString(36).substr(2) };
+            },
+            
+            async logout() {
+                await this.delay(300);
+                localStorage.removeItem(this.SESSION_KEY);
+                return true;
+            },
+            
+            saveSession(session) {
+                localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+            },
+            
+            getSession() {
+                const raw = localStorage.getItem(this.SESSION_KEY);
+                if (!raw) return null;
+                const session = JSON.parse(raw);
+                // Validate token hasn't expired (simulated: 7 days)
+                const age = Date.now() - new Date(session.createdAt).getTime();
+                if (age > 7 * 24 * 60 * 60 * 1000) {
+                    localStorage.removeItem(this.SESSION_KEY);
+                    return null;
+                }
+                return session;
+            }
+        };
+
+        // ==========================================
+        // ACTION TYPES
+        // ==========================================
+        // Auth Actions
+        const AUTH_LOGIN_REQUEST = 'AUTH_LOGIN_REQUEST';
+        const AUTH_LOGIN_SUCCESS = 'AUTH_LOGIN_SUCCESS';
+        const AUTH_LOGIN_FAILURE = 'AUTH_LOGIN_FAILURE';
+        const AUTH_REGISTER_REQUEST = 'AUTH_REGISTER_REQUEST';
+        const AUTH_REGISTER_SUCCESS = 'AUTH_REGISTER_SUCCESS';
+        const AUTH_REGISTER_FAILURE = 'AUTH_REGISTER_FAILURE';
+        const AUTH_LOGOUT = 'AUTH_LOGOUT';
+        const AUTH_RESTORE_SESSION = 'AUTH_RESTORE_SESSION';
+        const AUTH_CLEAR_ERROR = 'AUTH_CLEAR_ERROR';
+
+        // Todo Actions
+        const ADD_TODO = 'ADD_TODO';
+        const TOGGLE_TODO = 'TOGGLE_TODO';
+        const REMOVE_TODO = 'REMOVE_TODO';
+        const EDIT_TODO = 'EDIT_TODO';
+        const SET_TODO_FILTER = 'SET_TODO_FILTER';
+        const CLEAR_COMPLETED = 'CLEAR_COMPLETED';
+
+        // UI Actions
+        const SHOW_TOAST = 'SHOW_TOAST';
+        const HIDE_TOAST = 'HIDE_TOAST';
+
+        // ==========================================
+        // ACTION CREATORS
+        // ==========================================
+        
+        // Auth Action Creators
+        const loginRequest = () => ({ type: AUTH_LOGIN_REQUEST });
+        const loginSuccess = (user, token) => ({ type: AUTH_LOGIN_SUCCESS, payload: { user, token } });
+        const loginFailure = (error) => ({ type: AUTH_LOGIN_FAILURE, payload: error });
+        
+        const registerRequest = () => ({ type: AUTH_REGISTER_REQUEST });
+        const registerSuccess = (user, token) => ({ type: AUTH_REGISTER_SUCCESS, payload: { user, token } });
+        const registerFailure = (error) => ({ type: AUTH_REGISTER_FAILURE, payload: error });
+        
+        const logoutAction = () => ({ type: AUTH_LOGOUT });
+        const restoreSession = (user, token) => ({ type: AUTH_RESTORE_SESSION, payload: { user, token } });
+        const clearAuthError = () => ({ type: AUTH_CLEAR_ERROR });
+
+        // Todo Action Creators
+        const addTodo = (text) => ({
+            type: ADD_TODO,
+            payload: { id: Date.now() + Math.random(), text, completed: false, createdAt: new Date().toISOString() }
+        });
+        const toggleTodo = (id) => ({ type: TOGGLE_TODO, payload: id });
+        const removeTodo = (id) => ({ type: REMOVE_TODO, payload: id });
+        const editTodo = (id, text) => ({ type: EDIT_TODO, payload: { id, text } });
+        const setTodoFilter = (filter) => ({ type: SET_TODO_FILTER, payload: filter });
+        const clearCompleted = () => ({ type: CLEAR_COMPLETED });
+
+        // UI Action Creators
+        const showToast = (message, type = 'info') => ({ type: SHOW_TOAST, payload: { message, type, id: Date.now() } });
+        const hideToast = (id) => ({ type: HIDE_TOAST, payload: id });
+
+        // Thunk Action Creators (async)
+        const loginUser = (email, password) => async (dispatch) => {
+            dispatch(loginRequest());
+            try {
+                const result = await MockAuthService.login(email, password);
+                MockAuthService.saveSession({ ...result, createdAt: new Date().toISOString() });
+                dispatch(loginSuccess(result.user, result.token));
+                dispatch(showToast(`Welcome back, ${result.user.username}!`, 'success'));
+            } catch (error) {
+                dispatch(loginFailure(error.message));
+            }
+        };
+
+        const registerUser = (username, email, password) => async (dispatch) => {
+            dispatch(registerRequest());
+            try {
+                const result = await MockAuthService.register(username, email, password);
+                MockAuthService.saveSession({ ...result, createdAt: new Date().toISOString() });
+                dispatch(registerSuccess(result.user, result.token));
+                dispatch(showToast(`Welcome, ${result.user.username}! Account created.`, 'success'));
+            } catch (error) {
+                dispatch(registerFailure(error.message));
+            }
+        };
+
+        const logoutUser = () => async (dispatch) => {
+            await MockAuthService.logout();
+            dispatch(logoutAction());
+            dispatch(showToast('You have been logged out.', 'info'));
+        };
+
+        const checkSession = () => (dispatch) => {
+            const session = MockAuthService.getSession();
+            if (session) {
+                dispatch(restoreSession(session.user, session.token));
+            }
+        };
+
+        // ==========================================
+        // REDUCERS
+        // ==========================================
+        
+        const authInitialState = {
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null
+        };
+
+        const authReducer = (state = authInitialState, action) => {
+            switch (action.type) {
+                case AUTH_LOGIN_REQUEST:
+                case AUTH_REGISTER_REQUEST:
+                    return { ...state, isLoading: true, error: null };
+                
+                case AUTH_LOGIN_SUCCESS:
+                case AUTH_REGISTER_SUCCESS:
+                case AUTH_RESTORE_SESSION:
+                    return {
+                        ...state,
+                        user: action.payload.user,
+                        token: action.payload.token,
+                        isAuthenticated: true,
+                        isLoading: false,
+                        error: null
+                    };
+                
+                case AUTH_LOGIN_FAILURE:
+                case AUTH_REGISTER_FAILURE:
+                    return {
+                        ...state,
+                        isLoading: false,
+                        error: action.payload
+                    };
+                
+                case AUTH_LOGOUT:
+                    return { ...authInitialState };
+                
+                case AUTH_CLEAR_ERROR:
+                    return { ...state, error: null };
+                
+                default:
+                    return state;
+            }
+        };
+
+        const todoInitialState = {
+            items: [
+                { id: 1, text: 'Complete the authentication exercise', completed: false, createdAt: new Date().toISOString() },
+                { id: 2, text: 'Review Redux thunk middleware', completed: true, createdAt: new Date().toISOString() },
+                { id: 3, text: 'Implement protected routes', completed: false, createdAt: new Date().toISOString() }
+            ],
+            filter: 'ALL'
+        };
+
+        const todoReducer = (state = todoInitialState, action) => {
+            switch (action.type) {
+                case ADD_TODO:
+                    return { ...state, items: [action.payload, ...state.items] };
+                
+                case TOGGLE_TODO:
+                    return {
+                        ...state,
+                        items: state.items.map(todo =>
+                            todo.id === action.payload ? { ...todo, completed: !todo.completed } : todo
+                        )
+                    };
+                
+                case REMOVE_TODO:
+                    return { ...state, items: state.items.filter(todo => todo.id !== action.payload) };
+                
+                case EDIT_TODO:
+                    return {
+                        ...state,
+                        items: state.items.map(todo =>
+                            todo.id === action.payload.id ? { ...todo, text: action.payload.text } : todo
+                        )
+                    };
+                
+                case SET_TODO_FILTER:
+                    return { ...state, filter: action.payload };
+                
+                case CLEAR_COMPLETED:
+                    return { ...state, items: state.items.filter(todo => !todo.completed) };
+                
+                case AUTH_LOGOUT:
+                    return { ...todoInitialState };
+                
+                default:
+                    return state;
+            }
+        };
+
+        const toastInitialState = {
+            toasts: []
+        };
+
+        const toastReducer = (state = toastInitialState, action) => {
+            switch (action.type) {
+                case SHOW_TOAST:
+                    return { ...state, toasts: [...state.toasts, action.payload] };
+                case HIDE_TOAST:
+                    return { ...state, toasts: state.toasts.filter(t => t.id !== action.payload) };
+                default:
+                    return state;
+            }
+        };
+
+        const rootReducer = combineReducers({
+            auth: authReducer,
+            todos: todoReducer,
+            ui: toastReducer
+        });
+
+        // ==========================================
+        // STORE (with Redux Thunk simulation)
+        // ==========================================
+        const thunkMiddleware = ({ dispatch, getState }) => next => action => {
+            if (typeof action === 'function') {
+                return action(dispatch, getState);
+            }
+            return next(action);
+        };
+
+        const store = Redux.createStore(
+            rootReducer,
+            Redux.applyMiddleware(thunkMiddleware),
+            window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+        );
+
+        // ==========================================
+        // UTILITY COMPONENTS
+        // ==========================================
+
+        const ToastContainer = ({ toasts, hideToast }) => {
+            useEffect(() => {
+                toasts.forEach(toast => {
+                    const timer = setTimeout(() => hideToast(toast.id), 4000);
+                    return () => clearTimeout(timer);
+                });
+            }, [toasts, hideToast]);
+
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-orange-500',
+                info: 'bg-blue-500'
+            };
+
+            return (
+                <div className="fixed top-4 right-4 z-50 space-y-2 pointer-events-none">
+                    {toasts.map(toast => (
+                        <div key={toast.id} className={`toast pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-white ${colors[toast.type]} min-w-[300px]`}>
+                            <i className={`fas ${icons[toast.type]} text-lg`}></i>
+                            <span className="text-sm font-medium flex-1">{toast.message}</span>
+                            <button onClick={() => hideToast(toast.id)} className="opacity-70 hover:opacity-100">
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // ==========================================
+        // AUTH COMPONENTS
+        // ==========================================
+
+        const LoginForm = ({ onSwitch, loginUser, isLoading, error, clearAuthError }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [showPassword, setShowPassword] = useState(false);
+            const [localError, setLocalError] = useState('');
+
+            useEffect(() => {
+                if (error) {
+                    const timer = setTimeout(clearAuthError, 5000);
+                    return () => clearTimeout(timer);
+                }
+            }, [error, clearAuthError]);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setLocalError('');
+                
+                if (!email.trim() || !password) {
+                    setLocalError('Please fill in all fields');
+                    return;
+                }
+                
+                loginUser(email.trim(), password);
+            };
+
+            return (
+                <div className="w-full max-w-md slide-in">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                            <i className="fas fa-shield-alt text-3xl text-white"></i>
+                        </div>
+                        <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
+                        <p className="text-indigo-200">Sign in to manage your todos</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {(error || localError) && (
+                            <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3 flex items-center gap-3 text-red-100 text-sm shake">
+                                <i className="fas fa-exclamation-circle"></i>
+                                {error || localError}
+                            </div>
+                        )}
+
+                        <div className="input-group">
+                            <label className="block text-sm font-medium text-indigo-200 mb-1.5 ml-1">Email Address</label>
+                            <div className="relative">
+                                <i className="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="you@example.com"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none transition-all"
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="block text-sm font-medium text-indigo-200 mb-1.5 ml-1">Password</label>
+                            <div className="relative">
+                                <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter your password"
+                                    className="w-full pl-11 pr-12 py-3.5 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none transition-all"
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                                >
+                                    <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-3.5 bg-white text-indigo-600 rounded-xl font-bold text-lg hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <i className="fas fa-circle-notch spinner"></i>
+                                    Signing in...
+                                </>
+                            ) : (
+                                <>
+                                    Sign In
+                                    <i className="fas fa-arrow-right"></i>
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    <p className="text-center text-indigo-200 mt-6 text-sm">
+                        Don't have an account?{' '}
+                        <button onClick={onSwitch} className="text-white font-semibold hover:underline">
+                            Create one
+                        </button>
+                    </p>
+                </div>
+            );
+        };
+
+        const RegisterForm = ({ onSwitch, registerUser, isLoading, error, clearAuthError }) => {
+            const [username, setUsername] = useState('');
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [confirmPassword, setConfirmPassword] = useState('');
+            const [showPassword, setShowPassword] = useState(false);
+            const [localError, setLocalError] = useState('');
+            const [passwordStrength, setPasswordStrength] = useState(0);
+
+            useEffect(() => {
+                if (error) {
+                    const timer = setTimeout(clearAuthError, 5000);
+                    return () => clearTimeout(timer);
+                }
+            }, [error, clearAuthError]);
+
+            const calculateStrength = (pwd) => {
+                let score = 0;
+                if (pwd.length >= 6) score++;
+                if (pwd.length >= 10) score++;
+                if (/[A-Z]/.test(pwd)) score++;
+                if (/[0-9]/.test(pwd)) score++;
+                if (/[^A-Za-z0-9]/.test(pwd)) score++;
+                return score;
+            };
+
+            const handlePasswordChange = (e) => {
+                const val = e.target.value;
+                setPassword(val);
+                setPasswordStrength(calculateStrength(val));
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setLocalError('');
+
+                if (!username.trim() || !email.trim() || !password) {
+                    setLocalError('Please fill in all fields');
+                    return;
+                }
+                if (password !== confirmPassword) {
+                    setLocalError('Passwords do not match');
+                    return;
+                }
+                
+                registerUser(username.trim(), email.trim(), password);
+            };
+
+            const strengthColors = ['bg-gray-200', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-green-400', 'bg-emerald-500'];
+            const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+
+            return (
+                <div className="w-full max-w-md slide-in">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                            <i className="fas fa-user-plus text-3xl text-white"></i>
+                        </div>
+                        <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
+                        <p className="text-indigo-200">Start organizing your tasks</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {(error || localError) && (
+                            <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-3 flex items-center gap-3 text-red-100 text-sm shake">
+                                <i className="fas fa-exclamation-circle"></i>
+                                {error || localError}
+                            </div>
+                        )}
+
+                        <div className="input-group">
+                            <label className="block text-sm font-medium text-indigo-200 mb-1.5 ml-1">Username</label>
+                            <div className="relative">
+                                <i className="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="johndoe"
+                                    className="w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none transition-all"
+                                    disabled={isLoading}
+                                    maxLength={20}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="block text-sm font-medium text-indigo-200 mb-1.5 ml-1">Email Address</label>
+                            <div className="relative">
+                                <i className="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="you@example.com"
+                                    className="w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none transition-all"
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="input-group">
+                            <label className="block text-sm font-medium text-indigo-200 mb-1.5 ml-1">Password</label>
+                            <div className="relative">
+                                <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={handlePasswordChange}
+                                    placeholder="Min 6 characters"
+                                    className="w-full pl-11 pr-12 py-3 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none transition-all"
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+                                >
+                                    <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                </button>
+                            </div>
+                            {password && (
+                                <div className="mt-2">
+                                    <div className="flex gap-1 mb-1">
+                                        {[1,2,3,4,5].map(i => (
+                                            <div key={i} className={`flex-1 h-1 rounded-full transition-all ${i <= passwordStrength ? strengthColors[passwordStrength] : 'bg-white/20'}`}></div>
+                                    ))}
+                                    </div>
+                                    <span className="text-xs text-indigo-200">{strengthLabels[passwordStrength]}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="input-group">
+                            <label className="block text-sm font-medium text-indigo-200 mb-1.5 ml-1">Confirm Password</label>
+                            <div className="relative">
+                                <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="Repeat your password"
+                                    className="w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none transition-all"
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full py-3.5 bg-white text-indigo-600 rounded-xl font-bold text-lg hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <i className="fas fa-circle-notch spinner"></i>
+                                    Creating account...
+                                </>
+                            ) : (
+                                <>
+                                    Create Account
+                                    <i className="fas fa-arrow-right"></i>
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    <p className="text-center text-indigo-200 mt-6 text-sm">
+                        Already have an account?{' '}
+                        <button onClick={onSwitch} className="text-white font-semibold hover:underline">
+                            Sign in
+                        </button>
+                    </p>
+                </div>
+            );
+        };
+
+        const AuthPage = ({ loginUser, registerUser, isAuthenticated, isLoading, error, clearAuthError }) => {
+            const [isLogin, setIsLogin] = useState(true);
+
+            if (isAuthenticated) return null;
+
+            return (
+                <div className="min-h-screen auth-bg flex items-center justify-center p-4">
+                    <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        {/* Left Side - Branding */}
+                        <div className="hidden lg:block text-white">
+                            <div className="mb-8">
+                                <i className="fas fa-shield-alt text-6xl mb-6 opacity-90"></i>
+                                <h1 className="text-5xl font-bold mb-4">FocusGuard</h1>
+                                <p className="text-xl text-indigo-100 leading-relaxed">
+                                    Secure, organized, and always accessible.<br/>
+                                    Your personal todo manager with enterprise-grade authentication.
+                                </p>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                        <i className="fas fa-lock"></i>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold">Secure Authentication</h3>
+                                        <p className="text-sm text-indigo-200">Session-based login with validation</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                        <i className="fas fa-sync"></i>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold">Persistent Sessions</h3>
+                                        <p className="text-sm text-indigo-200">Stay logged in across browser sessions</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+                                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                        <i className="fas fa-user-shield"></i>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold">Protected Data</h3>
+                                        <p className="text-sm text-indigo-200">Todos isolated per user account</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Side - Form */}
+                        <div className="flex justify-center">
+                            {isLogin ? (
+                                <LoginForm 
+                                    onSwitch={() => setIsLogin(false)} 
+                                    loginUser={loginUser}
+                                    isLoading={isLoading}
+                                    error={error}
+                                    clearAuthError={clearAuthError}
+                                />
+                            ) : (
+                                <RegisterForm 
+                                    onSwitch={() => setIsLogin(true)} 
+                                    registerUser={registerUser}
+                                    isLoading={isLoading}
+                                    error={error}
+                                    clearAuthError={clearAuthError}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // TODO COMPONENTS
+        // ==========================================
+
+        const TodoItem = ({ todo, toggleTodo, removeTodo, editTodo }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [editText, setEditText] = useState(todo.text);
+            const [isRemoving, setIsRemoving] = useState(false);
+            const editRef = useRef(null);
+
+            useEffect(() => {
+                if (isEditing && editRef.current) {
+                    editRef.current.focus();
+                    editRef.current.select();
+                }
+            }, [isEditing]);
+
+            const handleRemove = () => {
+                setIsRemoving(true);
+                setTimeout(() => removeTodo(todo.id), 300);
+            };
+
+            const handleEdit = () => {
+                if (editText.trim() && editText !== todo.text) {
+                    editTodo(todo.id, editText.trim());
+                }
+                setIsEditing(false);
+            };
+
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMins = Math.floor((now - date) / 60000);
+                if (diffMins < 1) return 'Just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+                if (diffMins < 1440) return `${Math.floor(diffMins/60)}h ago`;
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            };
+
+            return (
+                <div className={`todo-item slide-in flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm border border-gray-100 mb-3 ${todo.completed ? 'completed' : ''} ${isRemoving ? 'fade-out' : ''}`}>
+                    <input
+                        type="checkbox"
+                        checked={todo.completed}
+                        onChange={() => toggleTodo(todo.id)}
+                        className="checkbox-custom"
+                    />
+                    
+                    <div className="flex-1 min-w-0">
+                        {isEditing ? (
+                            <input
+                                ref={editRef}
+                                type="text"
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                onBlur={handleEdit}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleEdit();
+                                    if (e.key === 'Escape') { setEditText(todo.text); setIsEditing(false); }
+                                }}
+                                className="w-full px-2 py-1 border-2 border-indigo-300 rounded-lg focus:outline-none text-sm"
+                            />
+                        ) : (
+                            <div className="flex flex-col">
+                                <span 
+                                    className="todo-text text-gray-800 font-medium cursor-pointer select-none truncate"
+                                    onDoubleClick={() => !todo.completed && setIsEditing(true)}
+                                    title="Double-click to edit"
+                                >
+                                    {todo.text}
+                                </span>
+                                <span className="text-xs text-gray-400 mt-0.5">{formatDate(todo.createdAt)}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                        {!todo.completed && !isEditing && (
+                            <button onClick={() => setIsEditing(true)} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Edit">
+                                <i className="fas fa-pen text-sm"></i>
+                            </button>
+                        )}
+                        <button onClick={handleRemove} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                            <i className="fas fa-trash-alt text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const AddTodoForm = ({ addTodo }) => {
+            const [text, setText] = useState('');
+            const inputRef = useRef(null);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (text.trim()) {
+                    addTodo(text.trim());
+                    setText('');
+                    inputRef.current?.focus();
+                }
+            };
+
+            return (
+                <form onSubmit={handleSubmit} className="mb-6">
+                    <div className="relative flex items-center">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="What needs to be done?"
+                            className="w-full pl-5 pr-14 py-4 bg-white border-2 border-gray-200 rounded-2xl focus:border-indigo-500 focus:outline-none text-gray-700 placeholder-gray-400 shadow-sm transition-all"
+                        />
+                        <button
+                            type="submit"
+                            disabled={!text.trim()}
+                            className="absolute right-2 p-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl transition-colors shadow-md"
+                        >
+                            <i className="fas fa-plus text-lg"></i>
+                        </button>
+                    </div>
+                </form>
+            );
+        };
+
+        const FilterTabs = ({ currentFilter, setFilter, counts }) => {
+            const filters = [
+                { key: 'ALL', label: 'All', count: counts.all },
+                { key: 'ACTIVE', label: 'Active', count: counts.active },
+                { key: 'COMPLETED', label: 'Completed', count: counts.completed }
+            ];
+
+            return (
+                <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-xl">
+                    {filters.map(f => (
+                        <button
+                            key={f.key}
+                            onClick={() => setFilter(f.key)}
+                            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${currentFilter === f.key ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                        >
+                            {f.label}
+                            <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${currentFilter === f.key ? 'bg-white/30' : 'bg-gray-200 text-gray-500'}`}>
+                                {f.count}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            );
+        };
+
+        const TodoDashboard = ({ user, todos, filter, logoutUser, addTodo, toggleTodo, removeTodo, editTodo, setFilter, clearCompleted }) => {
+            const filteredTodos = todos.filter(todo => {
+                if (filter === 'ACTIVE') return !todo.completed;
+                if (filter === 'COMPLETED') return todo.completed;
+                return true;
+            });
+
+            const counts = {
+                all: todos.length,
+                active: todos.filter(t => !t.completed).length,
+                completed: todos.filter(t => t.completed).length
+            };
+
+            const completedPercent = counts.all === 0 ? 0 : Math.round((counts.completed / counts.all) * 100);
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 protected-fade">
+                    <div className="max-w-2xl mx-auto">
+                        {/* Header */}
+                        <header className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <img 
+                                    src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} 
+                                    alt="avatar" 
+                                    className="w-12 h-12 rounded-full bg-white shadow-md"
+                                />
+                                <div>
+                                    <h1 className="text-2xl font-bold text-white">My Todos</h1>
+                                    <p className="text-indigo-200 text-sm">Welcome back, {user.username}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={logoutUser}
+                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-medium transition-all backdrop-blur-sm border border-white/20 flex items-center gap-2"
+                            >
+                                <i className="fas fa-sign-out-alt"></i>
+                                <span className="hidden sm:inline">Logout</span>
+                            </button>
+                        </header>
+
+                        {/* Progress Card */}
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 mb-6 text-white shadow-lg">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="font-medium text-indigo-100">Your Progress</span>
+                                <span className="text-2xl font-bold">{completedPercent}%</span>
+                            </div>
+                            <div className="w-full bg-white/20 rounded-full h-2.5 mb-2">
+                                <div className="bg-white rounded-full h-2.5 transition-all duration-500" style={{ width: `${completedPercent}%` }}></div>
+                            </div>
+                            <p className="text-sm text-indigo-200">{counts.completed} of {counts.all} tasks completed</p>
+                        </div>
+
+                        {/* Main Card */}
+                        <div className="glass-panel rounded-3xl shadow-2xl p-6 md:p-8">
+                            <AddTodoForm addTodo={addTodo} />
+                            <FilterTabs currentFilter={filter} setFilter={setFilter} counts={counts} />
+
+                            <div className="space-y-1 min-h-[200px]">
+                                {filteredTodos.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <i className="fas fa-clipboard-check text-2xl text-indigo-400"></i>
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-gray-700 mb-1">
+                                            {filter === 'COMPLETED' ? 'No completed tasks yet' : filter === 'ACTIVE' ? 'All tasks done!' : 'No tasks yet'}
+                                        </h3>
+                                        <p className="text-sm text-gray-500">
+                                            {filter === 'COMPLETED' ? 'Finish some tasks to see them here.' : 'Add a new task above to get started!'}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    filteredTodos.map(todo => (
+                                        <TodoItem
+                                            key={todo.id}
+                                            todo={todo}
+                                            toggleTodo={toggleTodo}
+                                            removeTodo={removeTodo}
+                                            editTodo={editTodo}
+                                        />
+                                    ))
+                                )}
+                            </div>
+
+                            {counts.completed > 0 && (
+                                <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
+                                    <p className="text-sm text-gray-500">
+                                        <span className="font-semibold text-gray-700">{counts.active}</span> items left
+                                    </p>
+                                    <button
+                                        onClick={clearCompleted}
+                                        className="text-sm text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all font-medium"
+                                    >
+                                        <i className="fas fa-broom mr-1"></i> Clear completed
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <footer className="text-center mt-6 text-white/50 text-sm">
+                            <p>Double-click a task to edit • Session persists in localStorage • Built with React & Redux</p>
+                        </footer>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // MAIN APP WITH ROUTING LOGIC
+        // ==========================================
+        const App = ({ 
+            auth, todos, ui,
+            checkSession, loginUser, registerUser, logoutUser,
+            addTodo, toggleTodo, removeTodo, editTodo, setTodoFilter, clearCompleted,
+            clearAuthError, hideToast
+        }) => {
+            // Check for existing session on mount
+            useEffect(() => {
+                checkSession();
+            }, []);
+
+            return (
+                <>
+                    <ToastContainer toasts={ui.toasts} hideToast={hideToast} />
+                    
+                    {!auth.isAuthenticated ? (
+                        <AuthPage
+                            loginUser={loginUser}
+                            registerUser={registerUser}
+                            isAuthenticated={auth.isAuthenticated}
+                            isLoading={auth.isLoading}
+                            error={auth.error}
+                            clearAuthError={clearAuthError}
+                        />
+                    ) : (
+                        <TodoDashboard
+                            user={auth.user}
+                            todos={todos.items}
+                            filter={todos.filter}
+                            logoutUser={logoutUser}
+                            addTodo={addTodo}
+                            toggleTodo={toggleTodo}
+                            removeTodo={removeTodo}
+                            editTodo={editTodo}
+                            setFilter={setTodoFilter}
+                            clearCompleted={clearCompleted}
+                        />
+                    )}
+                </>
+            );
+        };
+
+        // ==========================================
+        // CONNECT TO REDUX
+        // ==========================================
+        const mapStateToProps = (state) => ({
+            auth: state.auth,
+            todos: state.todos,
+            ui: state.ui
+        });
+
+        const mapDispatchToProps = {
+            checkSession,
+            loginUser,
+            registerUser,
+            logoutUser,
+            addTodo,
+            toggleTodo,
+            removeTodo,
+            editTodo,
+            setTodoFilter,
+            clearCompleted,
+            clearAuthError,
+            hideToast
+        };
+
+        const ConnectedApp = connect(mapStateToProps, mapDispatchToProps)(App);
+
+        // ==========================================
+        // RENDER
+        // ==========================================
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <Provider store={store}>
+                <ConnectedApp />
+            </Provider>
+        );
+    </script>
+</body>
+</html>

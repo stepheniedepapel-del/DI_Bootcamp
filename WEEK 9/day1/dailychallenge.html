@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Planner - React Redux</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Redux & React-Redux -->
+    <script src="https://unpkg.com/redux@4.2.1/dist/redux.min.js"></script>
+    <script src="https://unpkg.com/react-redux@8.1.3/dist/react-redux.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 50%, #ddd6fe 100%);
+            min-height: 100vh;
+        }
+        
+        .calendar-day {
+            transition: all 0.2s ease;
+        }
+        
+        .calendar-day:hover:not(.disabled) {
+            background-color: #e0e7ff;
+            transform: scale(1.05);
+        }
+        
+        .calendar-day.selected {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+        }
+        
+        .calendar-day.today {
+            border: 2px solid #4f46e5;
+            font-weight: 700;
+        }
+        
+        .calendar-day.has-tasks::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background-color: #4f46e5;
+        }
+        
+        .calendar-day.selected.has-tasks::after {
+            background-color: white;
+        }
+        
+        .task-item {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .task-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+        
+        .priority-high { border-left: 4px solid #ef4444; }
+        .priority-medium { border-left: 4px solid #f59e0b; }
+        .priority-low { border-left: 4px solid #10b981; }
+        
+        .checkbox-custom {
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .checkbox-custom:checked {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        
+        .checkbox-custom:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 13px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(30px); height: 0; margin: 0; padding: 0; overflow: hidden; }
+        }
+        
+        .modal-backdrop {
+            animation: backdropIn 0.2s ease-out;
+        }
+        
+        @keyframes backdropIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .time-slot {
+            transition: all 0.2s;
+        }
+        
+        .time-slot:hover {
+            background-color: #f1f5f9;
+        }
+        
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.5s ease;
+        }
+        
+        .day-nav-btn {
+            transition: all 0.2s;
+        }
+        
+        .day-nav-btn:hover {
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
+        
+        .category-pill {
+            transition: all 0.2s;
+        }
+        
+        .category-pill:hover {
+            transform: translateY(-1px);
+        }
+        
+        .empty-state {
+            animation: emptyFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes emptyFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { createStore } = Redux;
+        const { Provider, connect } = ReactRedux;
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // ==========================================
+        // UTILITY FUNCTIONS
+        // ==========================================
+        
+        const formatDateKey = (date) => {
+            return date.toISOString().split('T')[0]; // YYYY-MM-DD
+        };
+        
+        const parseDateKey = (key) => new Date(key + 'T00:00:00');
+        
+        const getMonthData = (year, month) => {
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDayOfWeek = firstDay.getDay(); // 0 = Sunday
+            
+            const days = [];
+            // Previous month padding
+            const prevMonthLastDay = new Date(year, month, 0).getDate();
+            for (let i = startDayOfWeek - 1; i >= 0; i--) {
+                days.push({ date: new Date(year, month - 1, prevMonthLastDay - i), isCurrentMonth: false });
+            }
+            // Current month
+            for (let i = 1; i <= daysInMonth; i++) {
+                days.push({ date: new Date(year, month, i), isCurrentMonth: true });
+            }
+            // Next month padding
+            const remaining = 42 - days.length; // 6 rows
+            for (let i = 1; i <= remaining; i++) {
+                days.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
+            }
+            
+            return days;
+        };
+        
+        const getWeekDays = (date) => {
+            const day = date.getDay();
+            const diff = date.getDate() - day;
+            const week = [];
+            for (let i = 0; i < 7; i++) {
+                week.push(new Date(date.getFullYear(), date.getMonth(), diff + i));
+            }
+            return week;
+        };
+        
+        const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        // ==========================================
+        // LOCAL STORAGE PERSISTENCE
+        // ==========================================
+        const Storage = {
+            KEY: 'daily_planner_data_v1',
+            load() {
+                try {
+                    const raw = localStorage.getItem(this.KEY);
+                    if (!raw) return null;
+                    return JSON.parse(raw);
+                } catch { return null; }
+            },
+            save(state) {
+                localStorage.setItem(this.KEY, JSON.stringify(state));
+            }
+        };
+
+        // ==========================================
+        // ACTION TYPES
+        // ==========================================
+        const ADD_TASK = 'ADD_TASK';
+        const EDIT_TASK = 'EDIT_TASK';
+        const DELETE_TASK = 'DELETE_TASK';
+        const TOGGLE_TASK = 'TOGGLE_TASK';
+        const SET_SELECTED_DATE = 'SET_SELECTED_DATE';
+        const SET_VIEW_MODE = 'SET_VIEW_MODE'; // 'day' | 'week' | 'month'
+        const REORDER_TASKS = 'REORDER_TASKS';
+
+        // ==========================================
+        // ACTION CREATORS
+        // ==========================================
+        const addTask = (dateKey, task) => ({
+            type: ADD_TASK,
+            payload: { dateKey, task: { ...task, id: Date.now() + Math.random(), createdAt: new Date().toISOString() } }
+        });
+
+        const editTask = (dateKey, taskId, updates) => ({
+            type: EDIT_TASK,
+            payload: { dateKey, taskId, updates }
+        });
+
+        const deleteTask = (dateKey, taskId) => ({
+            type: DELETE_TASK,
+            payload: { dateKey, taskId }
+        });
+
+        const toggleTask = (dateKey, taskId) => ({
+            type: TOGGLE_TASK,
+            payload: { dateKey, taskId }
+        });
+
+        const setSelectedDate = (date) => ({
+            type: SET_SELECTED_DATE,
+            payload: formatDateKey(date)
+        });
+
+        const setViewMode = (mode) => ({
+            type: SET_VIEW_MODE,
+            payload: mode
+        });
+
+        const reorderTasks = (dateKey, taskIds) => ({
+            type: REORDER_TASKS,
+            payload: { dateKey, taskIds }
+        });
+
+        // ==========================================
+        // INITIAL STATE WITH SAMPLE DATA
+        // ==========================================
+        const today = new Date();
+        const todayKey = formatDateKey(today);
+        const tomorrowKey = formatDateKey(new Date(today.getTime() + 86400000));
+        const yesterdayKey = formatDateKey(new Date(today.getTime() - 86400000));
+
+        const initialState = {
+            tasksByDate: {
+                [yesterdayKey]: [
+                    { id: 't1', text: 'Review project requirements', completed: true, priority: 'high', category: 'work', time: '09:00', createdAt: new Date().toISOString() },
+                    { id: 't2', text: 'Team standup meeting', completed: true, priority: 'medium', category: 'work', time: '10:30', createdAt: new Date().toISOString() }
+                ],
+                [todayKey]: [
+                    { id: 't3', text: 'Complete Redux exercise', completed: false, priority: 'high', category: 'study', time: '08:00', createdAt: new Date().toISOString() },
+                    { id: 't4', text: 'Grocery shopping', completed: false, priority: 'medium', category: 'personal', time: '14:00', createdAt: new Date().toISOString() },
+                    { id: 't5', text: 'Gym workout', completed: false, priority: 'low', category: 'health', time: '18:00', createdAt: new Date().toISOString() }
+                ],
+                [tomorrowKey]: [
+                    { id: 't6', text: 'Client presentation', completed: false, priority: 'high', category: 'work', time: '11:00', createdAt: new Date().toISOString() }
+                ]
+            },
+            selectedDate: todayKey,
+            viewMode: 'day'
+        };
+
+        // ==========================================
+        // REDUCER
+        // ==========================================
+        const plannerReducer = (state = initialState, action) => {
+            switch (action.type) {
+                case ADD_TASK: {
+                    const { dateKey, task } = action.payload;
+                    const currentTasks = state.tasksByDate[dateKey] || [];
+                    // Insert by time order
+                    const newTasks = [...currentTasks, task].sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+                    return {
+                        ...state,
+                        tasksByDate: { ...state.tasksByDate, [dateKey]: newTasks }
+                    };
+                }
+                
+                case EDIT_TASK: {
+                    const { dateKey, taskId, updates } = action.payload;
+                    const currentTasks = state.tasksByDate[dateKey] || [];
+                    const updatedTasks = currentTasks.map(t => 
+                        t.id === taskId ? { ...t, ...updates } : t
+                    ).sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+                    return {
+                        ...state,
+                        tasksByDate: { ...state.tasksByDate, [dateKey]: updatedTasks }
+                    };
+                }
+                
+                case DELETE_TASK: {
+                    const { dateKey, taskId } = action.payload;
+                    const currentTasks = state.tasksByDate[dateKey] || [];
+                    return {
+                        ...state,
+                        tasksByDate: {
+                            ...state.tasksByDate,
+                            [dateKey]: currentTasks.filter(t => t.id !== taskId)
+                        }
+                    };
+                }
+                
+                case TOGGLE_TASK: {
+                    const { dateKey, taskId } = action.payload;
+                    const currentTasks = state.tasksByDate[dateKey] || [];
+                    return {
+                        ...state,
+                        tasksByDate: {
+                            ...state.tasksByDate,
+                            [dateKey]: currentTasks.map(t => 
+                                t.id === taskId ? { ...t, completed: !t.completed } : t
+                            )
+                        }
+                    };
+                }
+                
+                case SET_SELECTED_DATE:
+                    return { ...state, selectedDate: action.payload };
+                
+                case SET_VIEW_MODE:
+                    return { ...state, viewMode: action.payload };
+                
+                case REORDER_TASKS: {
+                    const { dateKey, taskIds } = action.payload;
+                    const currentTasks = state.tasksByDate[dateKey] || [];
+                    const taskMap = new Map(currentTasks.map(t => [t.id, t]));
+                    return {
+                        ...state,
+                        tasksByDate: {
+                            ...state.tasksByDate,
+                            [dateKey]: taskIds.map(id => taskMap.get(id)).filter(Boolean)
+                        }
+                    };
+                }
+                
+                default:
+                    return state;
+            }
+        };
+
+        // ==========================================
+        // STORE WITH PERSISTENCE
+        // ==========================================
+        const persistedState = Storage.load();
+        const store = createStore(
+            plannerReducer,
+            persistedState || initialState,
+            window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+        );
+
+        // Subscribe to save changes
+        store.subscribe(() => {
+            Storage.save(store.getState());
+        });
+
+        // ==========================================
+        // COMPONENTS
+        // ==========================================
+
+        // --- Circular Progress ---
+        const CircularProgress = ({ percentage, size = 50 }) => {
+            const radius = (size - 8) / 2;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (percentage / 100) * circumference;
+            
+            return (
+                <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
+                    <svg className="transform -rotate-90" width={size} height={size}>
+                        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#e2e8f0" strokeWidth="4" />
+                        <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="#4f46e5" strokeWidth="4"
+                            strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="progress-ring-circle" />
+                    </svg>
+                    <span className="absolute text-xs font-bold text-gray-700">{percentage}%</span>
+                </div>
+            );
+        };
+
+        // --- Task Modal (Add/Edit) ---
+        const TaskModal = ({ isOpen, onClose, onSave, initialData = null, dateKey }) => {
+            const [text, setText] = useState(initialData?.text || '');
+            const [time, setTime] = useState(initialData?.time || '09:00');
+            const [priority, setPriority] = useState(initialData?.priority || 'medium');
+            const [category, setCategory] = useState(initialData?.category || 'personal');
+            const [error, setError] = useState('');
+            
+            const categories = [
+                { id: 'work', label: 'Work', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+                { id: 'personal', label: 'Personal', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+                { id: 'study', label: 'Study', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+                { id: 'health', label: 'Health', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+                { id: 'shopping', label: 'Shopping', color: 'bg-pink-100 text-pink-700 border-pink-200' }
+            ];
+
+            if (!isOpen) return null;
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!text.trim()) {
+                    setError('Task description is required');
+                    return;
+                }
+                onSave({ text: text.trim(), time, priority, category });
+                onClose();
+            };
+
+            const handleClose = () => {
+                setError('');
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={handleClose}>
+                    <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-white">
+                                {initialData ? 'Edit Task' : 'New Task'}
+                            </h3>
+                            <button onClick={handleClose} className="text-white/70 hover:text-white transition-colors">
+                                <i className="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {error && (
+                                <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+                                    <i className="fas fa-exclamation-circle"></i> {error}
+                                </div>
+                            )}
+                            
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Task Description</label>
+                                <input
+                                    type="text"
+                                    value={text}
+                                    onChange={(e) => { setText(e.target.value); setError(''); }}
+                                    placeholder="What do you need to do?"
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-all"
+                                    autoFocus
+                                />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Time</label>
+                                    <input
+                                        type="time"
+                                        value={time}
+                                        onChange={(e) => setTime(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Priority</label>
+                                    <select
+                                        value={priority}
+                                        onChange={(e) => setPriority(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-all bg-white"
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {categories.map(cat => (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            onClick={() => setCategory(cat.id)}
+                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all ${category === cat.id ? cat.color + ' border-current' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                                        >
+                                            {cat.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={handleClose}
+                                    className="flex-1 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg"
+                                >
+                                    {initialData ? 'Save Changes' : 'Add Task'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Task Item ---
+        const TaskItem = ({ task, onToggle, onEdit, onDelete }) => {
+            const [isRemoving, setIsRemoving] = useState(false);
+            
+            const categoryColors = {
+                work: 'bg-blue-50 text-blue-600 border-blue-100',
+                personal: 'bg-purple-50 text-purple-600 border-purple-100',
+                study: 'bg-amber-50 text-amber-600 border-amber-100',
+                health: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+                shopping: 'bg-pink-50 text-pink-600 border-pink-100'
+            };
+            
+            const priorityIcons = {
+                high: { icon: 'fa-fire', color: 'text-red-500' },
+                medium: { icon: 'fa-arrow-up', color: 'text-amber-500' },
+                low: { icon: 'fa-arrow-down', color: 'text-emerald-500' }
+            };
+
+            const handleDelete = () => {
+                setIsRemoving(true);
+                setTimeout(() => onDelete(task.id), 300);
+            };
+
+            const formatTime = (timeStr) => {
+                if (!timeStr) return '';
+                const [h, m] = timeStr.split(':');
+                const hour = parseInt(h);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour % 12 || 12;
+                return `${displayHour}:${m} ${ampm}`;
+            };
+
+            return (
+                <div className={`task-item slide-in flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100 mb-3 ${task.completed ? 'completed bg-gray-50/50' : ''} priority-${task.priority} ${isRemoving ? 'fade-out' : ''}`}>
+                    <input
+                        type="checkbox"
+                        checked={task.completed}
+                        onChange={() => onToggle(task.id)}
+                        className="checkbox-custom"
+                    />
+                    
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${categoryColors[task.category] || categoryColors.personal}`}>
+                                {task.category}
+                            </span>
+                            <span className={`text-xs ${priorityIcons[task.priority].color}`} title={`${task.priority} priority`}>
+                                <i className={`fas ${priorityIcons[task.priority].icon}`}></i>
+                            </span>
+                        </div>
+                        <p className={`task-text text-gray-800 font-medium ${task.completed ? 'line-through text-gray-400' : ''}`}>
+                            {task.text}
+                        </p>
+                        {task.time && (
+                            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                                <i className="far fa-clock"></i> {formatTime(task.time)}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                            onClick={() => onEdit(task)}
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            title="Edit"
+                        >
+                            <i className="fas fa-pen text-sm"></i>
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            title="Delete"
+                        >
+                            <i className="fas fa-trash-alt text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Calendar Component ---
+        const Calendar = ({ selectedDate, tasksByDate, onSelectDate }) => {
+            const [viewDate, setViewDate] = useState(parseDateKey(selectedDate));
+            const selectedDateObj = parseDateKey(selectedDate);
+            
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+            const days = getMonthData(year, month);
+            const todayKey = formatDateKey(new Date());
+            
+            const goToPrevMonth = () => setViewDate(new Date(year, month - 1, 1));
+            const goToNextMonth = () => setViewDate(new Date(year, month + 1, 1));
+            const goToToday = () => {
+                const today = new Date();
+                setViewDate(today);
+                onSelectDate(today);
+            };
+
+            return (
+                <div className="bg-white rounded-2xl shadow-lg p-5 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-800">
+                            {MONTH_NAMES[month]} {year}
+                        </h3>
+                        <div className="flex gap-1">
+                            <button onClick={goToToday} className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                                Today
+                            </button>
+                            <button onClick={goToPrevMonth} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                <i className="fas fa-chevron-left"></i>
+                            </button>
+                            <button onClick={goToNextMonth} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                <i className="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1 mb-2">
+                        {WEEKDAY_NAMES.map(day => (
+                            <div key={day} className="text-center text-xs font-semibold text-gray-500 py-1">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1">
+                        {days.map(({ date, isCurrentMonth }, idx) => {
+                            const key = formatDateKey(date);
+                            const isSelected = key === selectedDate;
+                            const isToday = key === todayKey;
+                            const hasTasks = (tasksByDate[key] || []).length > 0;
+                            const completedCount = (tasksByDate[key] || []).filter(t => t.completed).length;
+                            const totalCount = (tasksByDate[key] || []).length;
+                            const allCompleted = totalCount > 0 && completedCount === totalCount;
+                            
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => isCurrentMonth && onSelectDate(date)}
+                                    disabled={!isCurrentMonth}
+                                    className={`calendar-day relative h-10 rounded-lg text-sm font-medium flex items-center justify-center
+                                        ${isCurrentMonth ? 'text-gray-700' : 'text-gray-300 cursor-default'}
+                                        ${isSelected ? 'selected' : ''}
+                                        ${isToday && !isSelected ? 'today' : ''}
+                                        ${hasTasks && !isSelected ? 'has-tasks' : ''}
+                                        ${allCompleted && !isSelected ? 'bg-green-50' : ''}
+                                    `}
+                                >
+                                    {date.getDate()}
+                                    {hasTasks && isCurrentMonth && !isSelected && (
+                                        <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full text-[10px] flex items-center justify-center text-white font-bold
+                                            ${allCompleted ? 'bg-green-500' : 'bg-indigo-500'}`}>
+                                            {totalCount}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Day Navigation ---
+        const DayNavigation = ({ selectedDate, onSelectDate, tasksByDate }) => {
+            const date = parseDateKey(selectedDate);
+            const weekDays = getWeekDays(date);
+            const todayKey = formatDateKey(new Date());
+            
+            const goToPrevDay = () => {
+                const prev = new Date(date.getTime() - 86400000);
+                onSelectDate(prev);
+            };
+            
+            const goToNextDay = () => {
+                const next = new Date(date.getTime() + 86400000);
+                onSelectDate(next);
+            };
+
+            return (
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <button onClick={goToPrevDay} className="day-nav-btn p-2 rounded-xl text-gray-600">
+                            <i className="fas fa-chevron-left"></i>
+                        </button>
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold text-gray-800">
+                                {WEEKDAY_FULL[date.getDay()]}
+                            </h2>
+                            <p className="text-gray-500">
+                                {MONTH_NAMES[date.getMonth()]} {date.getDate()}, {date.getFullYear()}
+                            </p>
+                        </div>
+                        <button onClick={goToNextDay} className="day-nav-btn p-2 rounded-xl text-gray-600">
+                            <i className="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        {weekDays.map(day => {
+                            const key = formatDateKey(day);
+                            const isSelected = key === selectedDate;
+                            const isToday = key === todayKey;
+                            const taskCount = (tasksByDate[key] || []).length;
+                            
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => onSelectDate(day)}
+                                    className={`flex-shrink-0 w-14 h-16 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all
+                                        ${isSelected ? 'bg-indigo-600 text-white shadow-lg scale-105' : 'bg-white text-gray-600 hover:bg-indigo-50 border border-gray-200'}
+                                    `}
+                                >
+                                    <span className="text-xs font-medium">{WEEKDAY_NAMES[day.getDay()]}</span>
+                                    <span className={`text-lg font-bold ${isToday && !isSelected ? 'text-indigo-600' : ''}`}>{day.getDate()}</span>
+                                    {taskCount > 0 && !isSelected && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Task List for Selected Day ---
+        const DayTaskList = ({ dateKey, tasks, onToggle, onEdit, onDelete, onAdd }) => {
+            const completedCount = tasks.filter(t => t.completed).length;
+            const progress = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
+            
+            const sortedTasks = [...tasks].sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                return (a.time || '23:59').localeCompare(b.time || '23:59');
+            });
+
+            return (
+                <div className="bg-white rounded-2xl shadow-lg p-5">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <CircularProgress percentage={progress} size={45} />
+                            <div>
+                                <h3 className="font-bold text-gray-800">Tasks</h3>
+                                <p className="text-xs text-gray-500">{completedCount}/{tasks.length} completed</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={onAdd}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md flex items-center gap-2"
+                        >
+                            <i className="fas fa-plus"></i> Add Task
+                        </button>
+                    </div>
+
+                    {sortedTasks.length === 0 ? (
+                        <div className="text-center py-12 empty-state">
+                            <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i className="fas fa-calendar-day text-2xl text-indigo-400"></i>
+                            </div>
+                            <h4 className="text-lg font-semibold text-gray-700 mb-1">No tasks for this day</h4>
+                            <p className="text-sm text-gray-500 mb-4">Plan your day by adding tasks</p>
+                            <button
+                                onClick={onAdd}
+                                className="px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-100 transition-all"
+                            >
+                                <i className="fas fa-plus mr-1"></i> Add First Task
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-1">
+                            {sortedTasks.map(task => (
+                                <TaskItem
+                                    key={task.id}
+                                    task={task}
+                                    onToggle={onToggle}
+                                    onEdit={onEdit}
+                                    onDelete={onDelete}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- Weekly Overview ---
+        const WeeklyOverview = ({ selectedDate, tasksByDate, onSelectDate }) => {
+            const date = parseDateKey(selectedDate);
+            const weekDays = getWeekDays(date);
+            
+            return (
+                <div className="space-y-4">
+                    {weekDays.map(day => {
+                        const key = formatDateKey(day);
+                        const dayTasks = tasksByDate[key] || [];
+                        const isToday = key === formatDateKey(new Date());
+                        const isSelected = key === selectedDate;
+                        
+                        return (
+                            <div 
+                                key={key} 
+                                onClick={() => onSelectDate(day)}
+                                className={`bg-white rounded-xl p-4 shadow-sm border-2 cursor-pointer transition-all hover:shadow-md
+                                    ${isSelected ? 'border-indigo-500 bg-indigo-50/30' : 'border-transparent'}
+                                    ${isToday ? 'ring-2 ring-indigo-200' : ''}
+                                `}
+                            >
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm
+                                            ${isToday ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'}
+                                        `}>
+                                            {day.getDate()}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-gray-800">{WEEKDAY_FULL[day.getDay()]}</p>
+                                            <p className="text-xs text-gray-500">{MONTH_NAMES[day.getMonth()]} {day.getFullYear()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-2xl font-bold text-gray-800">{dayTasks.filter(t => t.completed).length}</span>
+                                        <span className="text-gray-400 text-sm">/{dayTasks.length}</span>
+                                    </div>
+                                </div>
+                                
+                                {dayTasks.length === 0 ? (
+                                    <p className="text-sm text-gray-400 italic pl-13">No tasks planned</p>
+                                ) : (
+                                    <div className="space-y-1.5 pl-13">
+                                        {dayTasks.slice(0, 3).map(task => (
+                                            <div key={task.id} className={`flex items-center gap-2 text-sm ${task.completed ? 'text-gray-400 line-through' : 'text-gray-600'}`}>
+                                                <i className={`fas fa-${task.completed ? 'check-circle text-green-500' : 'circle text-gray-300'} text-xs`}></i>
+                                                <span className="truncate">{task.text}</span>
+                                            </div>
+                                        ))}
+                                        {dayTasks.length > 3 && (
+                                            <p className="text-xs text-indigo-600 font-medium">+{dayTasks.length - 3} more tasks</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        const DailyPlanner = ({ 
+            tasksByDate, 
+            selectedDate, 
+            viewMode,
+            setSelectedDate, 
+            setViewMode,
+            addTask, 
+            editTask, 
+            deleteTask, 
+            toggleTask 
+        }) => {
+            const [modalOpen, setModalOpen] = useState(false);
+            const [editingTask, setEditingTask] = useState(null);
+            
+            const tasks = tasksByDate[selectedDate] || [];
+            const selectedDateObj = parseDateKey(selectedDate);
+
+            const handleAdd = (taskData) => {
+                addTask(selectedDate, taskData);
+            };
+
+            const handleEdit = (taskData) => {
+                if (editingTask) {
+                    editTask(selectedDate, editingTask.id, taskData);
+                    setEditingTask(null);
+                }
+            };
+
+            const openEditModal = (task) => {
+                setEditingTask(task);
+                setModalOpen(true);
+            };
+
+            const openAddModal = () => {
+                setEditingTask(null);
+                setModalOpen(true);
+            };
+
+            const closeModal = () => {
+                setModalOpen(false);
+                setEditingTask(null);
+            };
+
+            // Calculate stats
+            const allTasks = Object.values(tasksByDate).flat();
+            const totalTasks = allTasks.length;
+            const completedTasks = allTasks.filter(t => t.completed).length;
+            const completionRate = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+            
+            const todayKey = formatDateKey(new Date());
+            const todayTasks = tasksByDate[todayKey] || [];
+            const todayCompleted = todayTasks.filter(t => t.completed).length;
+
+            return (
+                <div className="max-w-6xl mx-auto pb-12">
+                    {/* Header */}
+                    <header className="mb-8">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">
+                                    <i className="fas fa-calendar-alt text-indigo-600 mr-3"></i>
+                                    Daily Planner
+                                </h1>
+                                <p className="text-gray-500">Organize your days, achieve your goals</p>
+                            </div>
+                            
+                            {/* Stats Cards */}
+                            <div className="flex gap-3">
+                                <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                                    <p className="text-xs text-gray-500 font-medium uppercase">Total Tasks</p>
+                                    <p className="text-xl font-bold text-gray-800">{totalTasks}</p>
+                                </div>
+                                <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                                    <p className="text-xs text-gray-500 font-medium uppercase">Completion</p>
+                                    <p className="text-xl font-bold text-indigo-600">{completionRate}%</p>
+                                </div>
+                                <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                                    <p className="text-xs text-gray-500 font-medium uppercase">Today</p>
+                                    <p className="text-xl font-bold text-emerald-600">{todayCompleted}/{todayTasks.length}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex gap-2 mb-6">
+                        <button
+                            onClick={() => setViewMode('day')}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${viewMode === 'day' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
+                        >
+                            <i className="fas fa-calendar-day mr-2"></i>Day
+                        </button>
+                        <button
+                            onClick={() => setViewMode('week')}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${viewMode === 'week' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
+                        >
+                            <i className="fas fa-calendar-week mr-2"></i>Week
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Left Column - Calendar & Navigation */}
+                        <div className="lg:col-span-1 space-y-6">
+                            <Calendar 
+                                selectedDate={selectedDate} 
+                                tasksByDate={tasksByDate}
+                                onSelectDate={setSelectedDate} 
+                            />
+                            
+                            {/* Quick Tips */}
+                            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-5 text-white shadow-lg">
+                                <h4 className="font-bold mb-2 flex items-center gap-2">
+                                    <i className="fas fa-lightbulb"></i> Tip
+                                </h4>
+                                <p className="text-sm text-indigo-100 leading-relaxed">
+                                    Click any date in the calendar to view and manage tasks for that day. Tasks are automatically sorted by time.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Right Column - Tasks */}
+                        <div className="lg:col-span-2">
+                            {viewMode === 'day' ? (
+                                <>
+                                    <DayNavigation 
+                                        selectedDate={selectedDate} 
+                                        onSelectDate={setSelectedDate}
+                                        tasksByDate={tasksByDate}
+                                    />
+                                    <DayTaskList
+                                        dateKey={selectedDate}
+                                        tasks={tasks}
+                                        onToggle={(id) => toggleTask(selectedDate, id)}
+                                        onEdit={openEditModal}
+                                        onDelete={(id) => deleteTask(selectedDate, id)}
+                                        onAdd={openAddModal}
+                                    />
+                                </>
+                            ) : (
+                                <WeeklyOverview
+                                    selectedDate={selectedDate}
+                                    tasksByDate={tasksByDate}
+                                    onSelectDate={(date) => {
+                                        setSelectedDate(date);
+                                        setViewMode('day');
+                                    }}
+                                />
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Task Modal */}
+                    <TaskModal
+                        isOpen={modalOpen}
+                        onClose={closeModal}
+                        onSave={editingTask ? handleEdit : handleAdd}
+                        initialData={editingTask}
+                        dateKey={selectedDate}
+                    />
+
+                    <footer className="text-center mt-12 text-gray-400 text-sm">
+                        <p>Data persists in localStorage • Select dates to plan ahead • Built with React & Redux</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // CONNECT TO REDUX
+        // ==========================================
+        const mapStateToProps = (state) => ({
+            tasksByDate: state.tasksByDate,
+            selectedDate: state.selectedDate,
+            viewMode: state.viewMode
+        });
+
+        const mapDispatchToProps = {
+            setSelectedDate,
+            setViewMode,
+            addTask,
+            editTask,
+            deleteTask,
+            toggleTask
+        };
+
+        const ConnectedPlanner = connect(mapStateToProps, mapDispatchToProps)(DailyPlanner);
+
+        // ==========================================
+        // RENDER
+        // ==========================================
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <Provider store={store}>
+                <ConnectedPlanner />
+            </Provider>
+        );
+    </script>
+</body>
+</html>
