@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Planner - React Redux Toolkit</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Redux Toolkit (UMD) -->
+    <script src="https://unpkg.com/@reduxjs/toolkit@1.9.5/dist/redux-toolkit.umd.js"></script>
+    <script src="https://unpkg.com/react-redux@8.1.3/dist/react-redux.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 50%, #ddd6fe 100%);
+            min-height: 100vh;
+        }
+        
+        .calendar-day {
+            transition: all 0.2s ease;
+        }
+        
+        .calendar-day:hover:not(.disabled) {
+            background-color: #e0e7ff;
+            transform: scale(1.05);
+        }
+        
+        .calendar-day.selected {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+        }
+        
+        .calendar-day.today {
+            border: 2px solid #4f46e5;
+            font-weight: 700;
+        }
+        
+        .calendar-day.has-tasks::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background-color: #4f46e5;
+        }
+        
+        .calendar-day.selected.has-tasks::after {
+            background-color: white;
+        }
+        
+        .task-item {
+            transition: all 0.25s ease;
+        }
+        
+        .task-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+        
+        .checkbox-custom {
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .checkbox-custom:checked {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        
+        .checkbox-custom:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 13px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(30px); height: 0; margin: 0; padding: 0; overflow: hidden; }
+        }
+        
+        .modal-backdrop {
+            animation: backdropIn 0.2s ease-out;
+        }
+        
+        @keyframes backdropIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .priority-high { border-left: 4px solid #ef4444; }
+        .priority-medium { border-left: 4px solid #f59e0b; }
+        .priority-low { border-left: 4px solid #10b981; }
+        
+        .day-nav-btn {
+            transition: all 0.2s;
+        }
+        
+        .day-nav-btn:hover {
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
+        
+        .empty-state {
+            animation: emptyFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes emptyFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { Provider, useSelector, useDispatch } = ReactRedux;
+        const { configureStore, createSlice } = window.RTK;
+        const { useState, useEffect, useMemo } = React;
+
+        // ==========================================
+        // UTILITY FUNCTIONS
+        // ==========================================
+        
+        const formatDateKey = (date) => {
+            return date.toISOString().split('T')[0];
+        };
+        
+        const parseDateKey = (key) => new Date(key + 'T00:00:00');
+        
+        const getMonthData = (year, month) => {
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDayOfWeek = firstDay.getDay();
+            
+            const days = [];
+            const prevMonthLastDay = new Date(year, month, 0).getDate();
+            for (let i = startDayOfWeek - 1; i >= 0; i--) {
+                days.push({ date: new Date(year, month - 1, prevMonthLastDay - i), isCurrentMonth: false });
+            }
+            for (let i = 1; i <= daysInMonth; i++) {
+                days.push({ date: new Date(year, month, i), isCurrentMonth: true });
+            }
+            const remaining = 42 - days.length;
+            for (let i = 1; i <= remaining; i++) {
+                days.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
+            }
+            
+            return days;
+        };
+        
+        const getWeekDays = (date) => {
+            const day = date.getDay();
+            const diff = date.getDate() - day;
+            const week = [];
+            for (let i = 0; i < 7; i++) {
+                week.push(new Date(date.getFullYear(), date.getMonth(), diff + i));
+            }
+            return week;
+        };
+        
+        const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const WEEKDAY_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        // ==========================================
+        // STEP 1 & 2: REDUX TOOLKIT SLICE
+        // ==========================================
+        
+        const today = new Date();
+        const todayKey = formatDateKey(today);
+        const tomorrowKey = formatDateKey(new Date(today.getTime() + 86400000));
+        const yesterdayKey = formatDateKey(new Date(today.getTime() - 86400000));
+
+        const plannerSlice = createSlice({
+            name: 'planner',
+            initialState: {
+                tasksByDate: {
+                    [yesterdayKey]: [
+                        { id: 't1', text: 'Review project requirements', completed: true, priority: 'high', time: '09:00', createdAt: new Date().toISOString() },
+                        { id: 't2', text: 'Team standup meeting', completed: true, priority: 'medium', time: '10:30', createdAt: new Date().toISOString() }
+                    ],
+                    [todayKey]: [
+                        { id: 't3', text: 'Complete Redux exercise', completed: false, priority: 'high', time: '08:00', createdAt: new Date().toISOString() },
+                        { id: 't4', text: 'Grocery shopping', completed: false, priority: 'medium', time: '14:00', createdAt: new Date().toISOString() },
+                        { id: 't5', text: 'Gym workout', completed: false, priority: 'low', time: '18:00', createdAt: new Date().toISOString() }
+                    ],
+                    [tomorrowKey]: [
+                        { id: 't6', text: 'Client presentation', completed: false, priority: 'high', time: '11:00', createdAt: new Date().toISOString() }
+                    ]
+                },
+                selectedDate: todayKey
+            },
+            reducers: {
+                // Step 2: Add task for specific day
+                addTask: (state, action) => {
+                    const { dateKey, task } = action.payload;
+                    if (!state.tasksByDate[dateKey]) {
+                        state.tasksByDate[dateKey] = [];
+                    }
+                    state.tasksByDate[dateKey].push({
+                        ...task,
+                        id: Date.now() + Math.random(),
+                        createdAt: new Date().toISOString()
+                    });
+                    // Sort by time
+                    state.tasksByDate[dateKey].sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+                },
+                
+                // Step 2: Edit task for specific day
+                editTask: (state, action) => {
+                    const { dateKey, taskId, updates } = action.payload;
+                    const tasks = state.tasksByDate[dateKey] || [];
+                    const task = tasks.find(t => t.id === taskId);
+                    if (task) {
+                        Object.assign(task, updates);
+                        tasks.sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+                    }
+                },
+                
+                // Step 2: Delete task for specific day
+                deleteTask: (state, action) => {
+                    const { dateKey, taskId } = action.payload;
+                    if (state.tasksByDate[dateKey]) {
+                        state.tasksByDate[dateKey] = state.tasksByDate[dateKey].filter(t => t.id !== taskId);
+                    }
+                },
+                
+                // Toggle completion
+                toggleTask: (state, action) => {
+                    const { dateKey, taskId } = action.payload;
+                    const task = state.tasksByDate[dateKey]?.find(t => t.id === taskId);
+                    if (task) {
+                        task.completed = !task.completed;
+                    }
+                },
+                
+                // Step 3: Set selected date
+                setSelectedDate: (state, action) => {
+                    state.selectedDate = action.payload;
+                }
+            }
+        });
+
+        const { addTask, editTask, deleteTask, toggleTask, setSelectedDate } = plannerSlice.actions;
+
+        // ==========================================
+        // STEP 2: CONFIGURE REDUX STORE
+        // ==========================================
+        
+        const store = configureStore({
+            reducer: {
+                planner: plannerSlice.reducer
+            },
+            devTools: true
+        });
+
+        // ==========================================
+        // STEP 3: CALENDAR/DATE PICKER COMPONENT
+        // ==========================================
+
+        const Calendar = () => {
+            const [viewDate, setViewDate] = useState(parseDateKey(useSelector(state => state.planner.selectedDate)));
+            const selectedDate = useSelector(state => state.planner.selectedDate);
+            const tasksByDate = useSelector(state => state.planner.tasksByDate);
+            const dispatch = useDispatch();
+            
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+            const days = getMonthData(year, month);
+            const todayKey = formatDateKey(new Date());
+            
+            const goToPrevMonth = () => setViewDate(new Date(year, month - 1, 1));
+            const goToNextMonth = () => setViewDate(new Date(year, month + 1, 1));
+            const goToToday = () => {
+                const today = new Date();
+                setViewDate(today);
+                dispatch(setSelectedDate(formatDateKey(today)));
+            };
+
+            return (
+                <div className="bg-white rounded-2xl shadow-lg p-5 mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-800">
+                            {MONTH_NAMES[month]} {year}
+                        </h3>
+                        <div className="flex gap-1">
+                            <button onClick={goToToday} className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                                Today
+                            </button>
+                            <button onClick={goToPrevMonth} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                <i className="fas fa-chevron-left"></i>
+                            </button>
+                            <button onClick={goToNextMonth} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                <i className="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1 mb-2">
+                        {WEEKDAY_NAMES.map(day => (
+                            <div key={day} className="text-center text-xs font-semibold text-gray-500 py-1">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1">
+                        {days.map(({ date, isCurrentMonth }, idx) => {
+                            const key = formatDateKey(date);
+                            const isSelected = key === selectedDate;
+                            const isToday = key === todayKey;
+                            const hasTasks = (tasksByDate[key] || []).length > 0;
+                            const completedCount = (tasksByDate[key] || []).filter(t => t.completed).length;
+                            const totalCount = (tasksByDate[key] || []).length;
+                            const allCompleted = totalCount > 0 && completedCount === totalCount;
+                            
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => isCurrentMonth && dispatch(setSelectedDate(key))}
+                                    disabled={!isCurrentMonth}
+                                    className={`calendar-day relative h-10 rounded-lg text-sm font-medium flex items-center justify-center
+                                        ${isCurrentMonth ? 'text-gray-700' : 'text-gray-300 cursor-default'}
+                                        ${isSelected ? 'selected' : ''}
+                                        ${isToday && !isSelected ? 'today' : ''}
+                                        ${hasTasks && !isSelected ? 'has-tasks' : ''}
+                                        ${allCompleted && !isSelected ? 'bg-green-50' : ''}
+                                    `}
+                                >
+                                    {date.getDate()}
+                                    {hasTasks && isCurrentMonth && !isSelected && (
+                                        <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full text-[10px] flex items-center justify-center text-white font-bold
+                                            ${allCompleted ? 'bg-green-500' : 'bg-indigo-500'}`}>
+                                            {totalCount}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // STEP 4: TASK COMPONENTS
+        // ==========================================
+
+        // --- Task Modal (Add/Edit) ---
+        const TaskModal = ({ isOpen, onClose, dateKey, task = null }) => {
+            const [text, setText] = useState('');
+            const [time, setTime] = useState('09:00');
+            const [priority, setPriority] = useState('medium');
+            const [errors, setErrors] = useState({});
+            const dispatch = useDispatch();
+
+            useEffect(() => {
+                if (task) {
+                    setText(task.text);
+                    setTime(task.time || '09:00');
+                    setPriority(task.priority || 'medium');
+                } else {
+                    setText('');
+                    setTime('09:00');
+                    setPriority('medium');
+                }
+                setErrors({});
+            }, [task, isOpen]);
+
+            if (!isOpen) return null;
+
+            const validate = () => {
+                const newErrors = {};
+                if (!text.trim()) newErrors.text = 'Task description is required';
+                setErrors(newErrors);
+                return Object.keys(newErrors).length === 0;
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (!validate()) return;
+
+                const taskData = { text: text.trim(), time, priority, completed: false };
+
+                if (task) {
+                    dispatch(editTask({ dateKey, taskId: task.id, updates: taskData }));
+                } else {
+                    dispatch(addTask({ dateKey, task: taskData }));
+                }
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+                    <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-white">
+                                <i className={`fas ${task ? 'fa-edit' : 'fa-plus'} mr-2`}></i>
+                                {task ? 'Edit Task' : 'New Task'}
+                            </h3>
+                            <button onClick={onClose} className="text-white/70 hover:text-white transition-colors">
+                                <i className="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            {errors.text && (
+                                <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg text-sm flex items-center gap-2">
+                                    <i className="fas fa-exclamation-circle"></i> {errors.text}
+                                </div>
+                            )}
+                            
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Task Description</label>
+                                <input
+                                    type="text"
+                                    value={text}
+                                    onChange={(e) => { setText(e.target.value); setErrors({}); }}
+                                    placeholder="What do you need to do?"
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none transition-all"
+                                    autoFocus
+                                />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Time</label>
+                                    <input
+                                        type="time"
+                                        value={time}
+                                        onChange={(e) => setTime(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Priority</label>
+                                    <select
+                                        value={priority}
+                                        onChange={(e) => setPriority(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:outline-none bg-white"
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg"
+                                >
+                                    {task ? 'Save Changes' : 'Add Task'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Task Item Component ---
+        const TaskItem = ({ task, dateKey }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [isRemoving, setIsRemoving] = useState(false);
+            const dispatch = useDispatch();
+
+            const handleToggle = () => {
+                dispatch(toggleTask({ dateKey, taskId: task.id }));
+            };
+
+            const handleDelete = () => {
+                setIsRemoving(true);
+                setTimeout(() => {
+                    dispatch(deleteTask({ dateKey, taskId: task.id }));
+                }, 300);
+            };
+
+            const formatTime = (timeStr) => {
+                if (!timeStr) return '';
+                const [h, m] = timeStr.split(':');
+                const hour = parseInt(h);
+                const ampm = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour % 12 || 12;
+                return `${displayHour}:${m} ${ampm}`;
+            };
+
+            const priorityColors = {
+                high: 'text-red-500 bg-red-50',
+                medium: 'text-amber-500 bg-amber-50',
+                low: 'text-emerald-500 bg-emerald-50'
+            };
+
+            return (
+                <>
+                    <div className={`task-item slide-in flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100 mb-3 ${task.completed ? 'completed' : ''} priority-${task.priority} ${isRemoving ? 'fade-out' : ''}`}>
+                        <input
+                            type="checkbox"
+                            checked={task.completed}
+                            onChange={handleToggle}
+                            className="checkbox-custom"
+                        />
+                        
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-md uppercase ${priorityColors[task.priority]}`}>
+                                    {task.priority}
+                                </span>
+                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                    <i className="far fa-clock"></i> {formatTime(task.time)}
+                                </span>
+                            </div>
+                            <p className={`task-text text-gray-800 font-medium ${task.completed ? 'line-through text-gray-400' : ''}`}>
+                                {task.text}
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                title="Edit"
+                            >
+                                <i className="fas fa-pen text-sm"></i>
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                title="Delete"
+                            >
+                                <i className="fas fa-trash-alt text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {isEditing && (
+                        <TaskModal
+                            isOpen={isEditing}
+                            onClose={() => setIsEditing(false)}
+                            dateKey={dateKey}
+                            task={task}
+                        />
+                    )}
+                </>
+            );
+        };
+
+        // --- TaskList Component (Step 4) ---
+        const TaskList = ({ dateKey }) => {
+            const tasksByDate = useSelector(state => state.planner.tasksByDate);
+            const tasks = tasksByDate[dateKey] || [];
+            const [showAddModal, setShowAddModal] = useState(false);
+
+            const sortedTasks = useMemo(() => {
+                return [...tasks].sort((a, b) => {
+                    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                    return (a.time || '23:59').localeCompare(b.time || '23:59');
+                });
+            }, [tasks]);
+
+            const completedCount = tasks.filter(t => t.completed).length;
+            const progress = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
+
+            const dateObj = parseDateKey(dateKey);
+            const isToday = dateKey === formatDateKey(new Date());
+
+            return (
+                <div className="bg-white rounded-2xl shadow-lg p-5">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 className="text-xl font-bold text-gray-800">
+                                {WEEKDAY_FULL[dateObj.getDay()]}
+                                {isToday && <span className="ml-2 text-sm font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Today</span>}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                                {MONTH_NAMES[dateObj.getMonth()]} {dateObj.getDate()}, {dateObj.getFullYear()}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <p className="text-2xl font-bold text-indigo-600">{progress}%</p>
+                                <p className="text-xs text-gray-500">{completedCount}/{tasks.length} done</p>
+                            </div>
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="w-10 h-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl flex items-center justify-center transition-all shadow-md"
+                            >
+                                <i className="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {sortedTasks.length === 0 ? (
+                        <div className="text-center py-12 empty-state">
+                            <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i className="fas fa-calendar-day text-2xl text-indigo-400"></i>
+                            </div>
+                            <h4 className="text-lg font-semibold text-gray-700 mb-1">No tasks for this day</h4>
+                            <p className="text-sm text-gray-500 mb-4">Plan your day by adding tasks</p>
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-100 transition-all"
+                            >
+                                <i className="fas fa-plus mr-1"></i> Add First Task
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-1">
+                            {sortedTasks.map(task => (
+                                <TaskItem key={task.id} task={task} dateKey={dateKey} />
+                            ))}
+                        </div>
+                    )}
+
+                    <TaskModal
+                        isOpen={showAddModal}
+                        onClose={() => setShowAddModal(false)}
+                        dateKey={dateKey}
+                    />
+                </div>
+            );
+        };
+
+        // --- Day Navigation ---
+        const DayNavigation = () => {
+            const selectedDate = useSelector(state => state.planner.selectedDate);
+            const tasksByDate = useSelector(state => state.planner.tasksByDate);
+            const dispatch = useDispatch();
+            
+            const date = parseDateKey(selectedDate);
+            const weekDays = getWeekDays(date);
+            const todayKey = formatDateKey(new Date());
+            
+            const goToPrevDay = () => {
+                const prev = new Date(date.getTime() - 86400000);
+                dispatch(setSelectedDate(formatDateKey(prev)));
+            };
+            
+            const goToNextDay = () => {
+                const next = new Date(date.getTime() + 86400000);
+                dispatch(setSelectedDate(formatDateKey(next)));
+            };
+
+            return (
+                <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <button onClick={goToPrevDay} className="day-nav-btn p-2 rounded-xl text-gray-600 bg-white shadow-sm">
+                            <i className="fas fa-chevron-left"></i>
+                        </button>
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold text-gray-800">
+                                {WEEKDAY_FULL[date.getDay()]}
+                            </h2>
+                            <p className="text-gray-500">
+                                {MONTH_NAMES[date.getMonth()]} {date.getDate()}, {date.getFullYear()}
+                            </p>
+                        </div>
+                        <button onClick={goToNextDay} className="day-nav-btn p-2 rounded-xl text-gray-600 bg-white shadow-sm">
+                            <i className="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        {weekDays.map(day => {
+                            const key = formatDateKey(day);
+                            const isSelected = key === selectedDate;
+                            const isToday = key === todayKey;
+                            const taskCount = (tasksByDate[key] || []).length;
+                            
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => dispatch(setSelectedDate(key))}
+                                    className={`flex-shrink-0 w-14 h-16 rounded-xl flex flex-col items-center justify-center gap-0.5 transition-all
+                                        ${isSelected ? 'bg-indigo-600 text-white shadow-lg scale-105' : 'bg-white text-gray-600 hover:bg-indigo-50 border border-gray-200'}
+                                    `}
+                                >
+                                    <span className="text-xs font-medium">{WEEKDAY_NAMES[day.getDay()]}</span>
+                                    <span className={`text-lg font-bold ${isToday && !isSelected ? 'text-indigo-600' : ''}`}>{day.getDate()}</span>
+                                    {taskCount > 0 && !isSelected && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // STEP 5 & 6: MAIN APP
+        // ==========================================
+
+        const App = () => {
+            const selectedDate = useSelector(state => state.planner.selectedDate);
+            const tasksByDate = useSelector(state => state.planner.tasksByDate);
+
+            // Calculate overall stats
+            const allTasks = Object.values(tasksByDate).flat();
+            const totalTasks = allTasks.length;
+            const completedTasks = allTasks.filter(t => t.completed).length;
+            const completionRate = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+            return (
+                <div className="max-w-5xl mx-auto pb-12">
+                    {/* Header */}
+                    <header className="mb-8">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">
+                                    <i className="fas fa-calendar-alt text-indigo-600 mr-3"></i>
+                                    Daily Planner
+                                </h1>
+                                <p className="text-gray-500">Manage your tasks day by day</p>
+                            </div>
+                            
+                            {/* Overall Stats */}
+                            <div className="flex gap-3">
+                                <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                                    <p className="text-xs text-gray-500 font-medium uppercase">Total Tasks</p>
+                                    <p className="text-xl font-bold text-gray-800">{totalTasks}</p>
+                                </div>
+                                <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-gray-100">
+                                    <p className="text-xs text-gray-500 font-medium uppercase">Completion</p>
+                                    <p className="text-xl font-bold text-indigo-600">{completionRate}%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Left Column - Calendar */}
+                        <div className="lg:col-span-1">
+                            <Calendar />
+                            
+                            {/* Quick Tips */}
+                            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl p-5 text-white shadow-lg mt-6">
+                                <h4 className="font-bold mb-2 flex items-center gap-2">
+                                    <i className="fas fa-lightbulb"></i> Tip
+                                </h4>
+                                <p className="text-sm text-indigo-100 leading-relaxed">
+                                    Click any date in the calendar to view and manage tasks for that day. Tasks are automatically sorted by time.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Right Column - Task List */}
+                        <div className="lg:col-span-2">
+                            <DayNavigation />
+                            <TaskList dateKey={selectedDate} />
+                        </div>
+                    </div>
+
+                    <footer className="text-center mt-12 text-gray-400 text-sm">
+                        <p>Built with Redux Toolkit • useSelector & useDispatch hooks • createSlice</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // ==========================================
+        // RENDER WITH PROVIDER
+        // ==========================================
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <Provider store={store}>
+                <App />
+            </Provider>
+        );
+    </script>
+</body>
+</html>
