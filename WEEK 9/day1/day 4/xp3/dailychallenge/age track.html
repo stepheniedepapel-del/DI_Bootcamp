@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Challenge: Age Tracker with Thunk</title>
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <script src="https://unpkg.com/redux@4.2.1/dist/redux.js"></script>
+  <script src="https://unpkg.com/react-redux@8.1.3/dist/react-redux.js"></script>
+  
+  <script src="https://unpkg.com/@reduxjs/toolkit@1.9.7/dist/redux-toolkit.umd.js"></script>
+  
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #eef2f3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .app-card {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+    }
+    h1 { color: #2c3e50; font-size: 26px; margin-bottom: 30px; }
+    
+    /* Age Display Styling */
+    .display-container {
+      margin: 20px 0;
+      position: relative;
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .age-number {
+      font-size: 64px;
+      font-weight: bold;
+      color: #3498db;
+      margin: 0;
+      transition: opacity 0.2s ease;
+    }
+    .age-number.loading-active {
+      opacity: 0.3;
+    }
+    .label {
+      color: #7f8c8d;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    /* CSS Spinner Loading Icon */
+    .spinner {
+      position: absolute;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border-left-color: #3498db;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Controls Styling */
+    .controls-form {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 25px;
+    }
+    .btn {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 1;
+    }
+    .btn:disabled {
+      background-color: #bdc3c7 !important;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    .btn-up {
+      background-color: #2ecc71;
+      color: white;
+    }
+    .btn-up:hover:not(:disabled) { background-color: #27ae60; transform: translateY(-2px); }
+    .btn-down {
+      background-color: #e74c3c;
+      color: white;
+    }
+    .btn-down:hover:not(:disabled) { background-color: #c0392b; transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { Provider, useSelector, useDispatch } = ReactRedux;
+    const { configureStore, createSlice, createAsyncThunk } = window.RTK;
+
+    // ==================== ASYNC THUNKS ====================
+    // Thunk action to asynchronously increment age after 1 second delay
+    const ageUpAsync = createAsyncThunk(
+      'age/ageUpAsync',
+      async () => {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return 1; 
+      }
+    );
+
+    // Thunk action to asynchronously decrement age after 1 second delay
+    const ageDownAsync = createAsyncThunk(
+      'age/ageDownAsync',
+      async () => {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return 1;
+      }
+    );
+
+    // ==================== AGE SLICE ====================
+    const ageSlice = createSlice({
+      name: 'age',
+      initialState: {
+        age: 25, // Initial starting age
+        loading: false
+      },
+      reducers: {},
+      // Extra Reducers to catch the life-cycle of Thunk promises
+      extraReducers: (builder) => {
+        builder
+          // Age Up Handlers
+          .addCase(ageUpAsync.pending, (state) => {
+            state.loading = true;
+          })
+          .addCase(ageUpAsync.fulfilled, (state, action) => {
+            state.loading = false;
+            state.age += action.payload;
+          })
+          // Age Down Handlers
+          .addCase(ageDownAsync.pending, (state) => {
+            state.loading = true;
+          })
+          .addCase(ageDownAsync.fulfilled, (state, action) => {
+            state.loading = false;
+            state.age -= action.payload;
+          });
+      }
+    });
+
+    // ==================== REDUX STORE ====================
+    // Thunk middleware is included by default inside configureStore
+    const store = configureStore({
+      reducer: {
+        ageManager: ageSlice.reducer
+      }
+    });
+
+    // ==================== COMPONENTS ====================
+
+    // Component 1: Displays current state and loading status
+    const AgeDisplay = () => {
+      const { age, loading } = useSelector((state) => state.ageManager);
+
+      return (
+        <div className="display-container">
+          {loading && <div className="spinner"></div>}
+          <p className={`age-number ${loading ? 'loading-active' : ''}`}>
+            {age}
+          </p>
+          <span className="label">Years Old</span>
+        </div>
+      );
+    };
+
+    // Component 2: Triggers dispatch functions via form handlers
+    const AgeControls = () => {
+      const dispatch = useDispatch();
+      const { loading } = useSelector((state) => state.ageManager);
+
+      const handleSubmit = (e) => {
+        e.preventDefault(); // Standard form handling behavior
+      };
+
+      return (
+        <form className="controls-form" onSubmit={handleSubmit}>
+          <button 
+            type="button"
+            className="btn btn-down" 
+            disabled={loading}
+            onClick={() => dispatch(ageDownAsync())}
+          >
+            Age Down -
+          </button>
+          
+          <button 
+            type="button"
+            className="btn btn-up" 
+            disabled={loading}
+            onClick={() => dispatch(ageUpAsync())}
+          >
+            Age Up +
+          </button>
+        </form>
+      );
+    };
+
+    // Master wrapper layout component
+    const App = () => {
+      return (
+        <Provider store={store}>
+          <div className="app-card">
+            <h1>⏳ Age Tracker</h1>
+            <AgeDisplay />
+            <AgeControls />
+          </div>
+        </Provider>
+      );
+    };
+
+    // Render configuration mapping to target root node
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
