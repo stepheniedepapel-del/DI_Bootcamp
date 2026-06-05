@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Inventory - Redux Selectors Demo</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/redux@4.2.1/dist/redux.min.js"></script>
+    <script src="https://unpkg.com/react-redux@8.1.3/dist/react-redux.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #4338ca;
+            --secondary: #06b6d4;
+            --bg: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --horror: #ef4444;
+            --fantasy: #a855f7;
+            --scifi: #06b6d4;
+            --mystery: #f59e0b;
+            --romance: #ec4899;
+            --all: #10b981;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .redux-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+        }
+
+        .redux-badge i { color: var(--primary-light); }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(6, 182, 212, 0.1));
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-count {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: capitalize;
+        }
+
+        /* Genre Filter */
+        .filter-section {
+            margin-bottom: 2rem;
+        }
+
+        .filter-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .genre-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .genre-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            border-radius: 2rem;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .genre-tab:hover {
+            border-color: var(--primary-light);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+
+        .genre-tab.active {
+            color: white;
+            border-color: transparent;
+            box-shadow: var(--shadow);
+        }
+
+        .genre-tab.all.active { background: linear-gradient(135deg, var(--all), #059669); }
+        .genre-tab.horror.active { background: linear-gradient(135deg, var(--horror), #dc2626); }
+        .genre-tab.fantasy.active { background: linear-gradient(135deg, var(--fantasy), #9333ea); }
+        .genre-tab.scifi.active { background: linear-gradient(135deg, var(--scifi), #0891b2); }
+        .genre-tab.mystery.active { background: linear-gradient(135deg, var(--mystery), #d97706); }
+        .genre-tab.romance.active { background: linear-gradient(135deg, var(--romance), #db2777); }
+
+        .genre-tab .count {
+            background: rgba(255,255,255,0.2);
+            padding: 0.15rem 0.5rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Book Grid */
+        .books-section {
+            margin-top: 1rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title .genre-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .book-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .book-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        .book-card.horror::before { background: var(--horror); }
+        .book-card.fantasy::before { background: var(--fantasy); }
+        .book-card.scifi::before { background: var(--scifi); }
+        .book-card.mystery::before { background: var(--mystery); }
+        .book-card.romance::before { background: var(--romance); }
+
+        .book-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--bg-hover);
+        }
+
+        .book-genre-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .book-genre-badge.horror { background: rgba(239, 68, 68, 0.15); color: var(--horror); }
+        .book-genre-badge.fantasy { background: rgba(168, 85, 247, 0.15); color: var(--fantasy); }
+        .book-genre-badge.scifi { background: rgba(6, 182, 212, 0.15); color: var(--scifi); }
+        .book-genre-badge.mystery { background: rgba(245, 158, 11, 0.15); color: var(--mystery); }
+        .book-genre-badge.romance { background: rgba(236, 72, 153, 0.15); color: var(--romance); }
+
+        .book-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .book-author {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .book-author i { font-size: 0.8rem; }
+
+        .book-id {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: var(--bg);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .book-footer {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .book-rating {
+            color: #fbbf24;
+            font-size: 0.85rem;
+        }
+
+        .book-year {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Performance Monitor */
+        .perf-monitor {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            box-shadow: var(--shadow-lg);
+            font-size: 0.8rem;
+            z-index: 100;
+            max-width: 280px;
+        }
+
+        .perf-monitor h4 {
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .perf-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+            color: var(--text-muted);
+        }
+
+        .perf-stat span:last-child {
+            color: var(--text);
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        .selector-hit {
+            color: #10b981 !important;
+        }
+
+        .selector-miss {
+            color: var(--horror) !important;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .book-card {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-container { padding: 1rem; }
+            .header h1 { font-size: 1.75rem; }
+            .book-grid { grid-template-columns: 1fr; }
+            .genre-tabs { justify-content: center; }
+            .perf-monitor {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                margin-top: 2rem;
+                max-width: 100%;
+            }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+        const { Provider, useSelector, useDispatch } = ReactRedux;
+        const { createStore } = Redux;
+
+        // ============================================
+        // MOCK DATA - Book Inventory
+        // ============================================
+        const initialBooks = [
+            { id: 1, title: "The Shining", author: "Stephen King", genre: "horror", year: 1977, rating: 4.5 },
+            { id: 2, title: "Dune", author: "Frank Herbert", genre: "scifi", year: 1965, rating: 4.7 },
+            { id: 3, title: "The Hobbit", author: "J.R.R. Tolkien", genre: "fantasy", year: 1937, rating: 4.8 },
+            { id: 4, title: "It", author: "Stephen King", genre: "horror", year: 1986, rating: 4.3 },
+            { id: 5, title: "Neuromancer", author: "William Gibson", genre: "scifi", year: 1984, rating: 4.2 },
+            { id: 6, title: "Harry Potter and the Sorcerer's Stone", author: "J.K. Rowling", genre: "fantasy", year: 1997, rating: 4.9 },
+            { id: 7, title: "The Silence of the Lambs", author: "Thomas Harris", genre: "horror", year: 1988, rating: 4.6 },
+            { id: 8, title: "Foundation", author: "Isaac Asimov", genre: "scifi", year: 1951, rating: 4.5 },
+            { id: 9, title: "The Name of the Wind", author: "Patrick Rothfuss", genre: "fantasy", year: 2007, rating: 4.6 },
+            { id: 10, title: "Dracula", author: "Bram Stoker", genre: "horror", year: 1897, rating: 4.1 },
+            { id: 11, title: "Snow Crash", author: "Neal Stephenson", genre: "scifi", year: 1992, rating: 4.0 },
+            { id: 12, title: "A Game of Thrones", author: "George R.R. Martin", genre: "fantasy", year: 1996, rating: 4.7 },
+            { id: 13, title: "The Girl with the Dragon Tattoo", author: "Stieg Larsson", genre: "mystery", year: 2005, rating: 4.4 },
+            { id: 14, title: "Gone Girl", author: "Gillian Flynn", genre: "mystery", year: 2012, rating: 4.3 },
+            { id: 15, title: "Pride and Prejudice", author: "Jane Austen", genre: "romance", year: 1813, rating: 4.6 },
+            { id: 16, title: "The Notebook", author: "Nicholas Sparks", genre: "romance", year: 1996, rating: 4.2 },
+            { id: 17, title: "The Da Vinci Code", author: "Dan Brown", genre: "mystery", year: 2003, rating: 4.0 },
+            { id: 18, title: "Outlander", author: "Diana Gabaldon", genre: "romance", year: 1991, rating: 4.5 },
+            { id: 19, title: "Frankenstein", author: "Mary Shelley", genre: "horror", year: 1818, rating: 4.4 },
+            { id: 20, title: "The Martian", author: "Andy Weir", genre: "scifi", year: 2011, rating: 4.8 },
+        ];
+
+        // ============================================
+        // REDUX STORE & SELECTORS (Manual createSelector simulation)
+        // ============================================
+
+        // Simple memoized selector implementation (simulating createSelector)
+        const createSelector = (...funcs) => {
+            let lastArgs = [];
+            let lastResult;
+            let callCount = 0;
+            let cacheHitCount = 0;
+
+            const selector = (state) => {
+                callCount++;
+                const args = funcs.slice(0, -1).map(fn => fn(state));
+
+                // Check if args changed (shallow comparison)
+                const argsChanged = args.length !== lastArgs.length || 
+                    args.some((arg, i) => arg !== lastArgs[i]);
+
+                if (!argsChanged && lastResult !== undefined) {
+                    cacheHitCount++;
+                    return lastResult;
+                }
+
+                lastArgs = args;
+                lastResult = funcs[funcs.length - 1](...args);
+                return lastResult;
+            };
+
+            // Attach metadata for monitoring
+            selector._meta = { callCount: () => callCount, cacheHitCount: () => cacheHitCount };
+            return selector;
+        };
+
+        // Action Types
+        const SET_GENRE_FILTER = 'SET_GENRE_FILTER';
+        const ADD_BOOK = 'ADD_BOOK';
+        const REMOVE_BOOK = 'REMOVE_BOOK';
+
+        // Actions
+        const setGenreFilter = (genre) => ({ type: SET_GENRE_FILTER, payload: genre });
+        const addBook = (book) => ({ type: ADD_BOOK, payload: { ...book, id: Date.now() } });
+        const removeBook = (id) => ({ type: REMOVE_BOOK, payload: id });
+
+        // Reducer
+        const initialState = {
+            books: initialBooks,
+            filter: 'all'
+        };
+
+        const bookReducer = (state = initialState, action) => {
+            switch (action.type) {
+                case SET_GENRE_FILTER:
+                    return { ...state, filter: action.payload };
+                case ADD_BOOK:
+                    return { ...state, books: [...state.books, action.payload] };
+                case REMOVE_BOOK:
+                    return { ...state, books: state.books.filter(b => b.id !== action.payload) };
+                default:
+                    return state;
+            }
+        };
+
+        const store = createStore(bookReducer);
+
+        // ============================================
+        // SELECTORS (Using createSelector for memoization)
+        // ============================================
+
+        // Base selector - gets all books
+        const selectBooks = createSelector(
+            (state) => state.books,
+            (books) => books
+        );
+
+        // Genre-specific selectors (memoized)
+        const selectHorrorBooks = createSelector(
+            (state) => state.books,
+            (books) => books.filter(book => book.genre === 'horror')
+        );
+
+        const selectFantasyBooks = createSelector(
+            (state) => state.books,
+            (books) => books.filter(book => book.genre === 'fantasy')
+        );
+
+        const selectScienceFictionBooks = createSelector(
+            (state) => state.books,
+            (books) => books.filter(book => book.genre === 'scifi')
+        );
+
+        const selectMysteryBooks = createSelector(
+            (state) => state.books,
+            (books) => books.filter(book => book.genre === 'mystery')
+        );
+
+        const selectRomanceBooks = createSelector(
+            (state) => state.books,
+            (books) => books.filter(book => book.genre === 'romance')
+        );
+
+        // Genre count selectors (memoized)
+        const selectHorrorCount = createSelector(
+            selectHorrorBooks,
+            (books) => books.length
+        );
+
+        const selectFantasyCount = createSelector(
+            selectFantasyBooks,
+            (books) => books.length
+        );
+
+        const selectScifiCount = createSelector(
+            selectScienceFictionBooks,
+            (books) => books.length
+        );
+
+        const selectMysteryCount = createSelector(
+            selectMysteryBooks,
+            (books) => books.length
+        );
+
+        const selectRomanceCount = createSelector(
+            selectRomanceBooks,
+            (books) => books.length
+        );
+
+        const selectTotalCount = createSelector(
+            selectBooks,
+            (books) => books.length
+        );
+
+        // Dynamic genre selector based on filter
+        const selectFilteredBooks = createSelector(
+            (state) => state.books,
+            (state) => state.filter,
+            (books, filter) => {
+                if (filter === 'all') return books;
+                return books.filter(book => book.genre === filter);
+            }
+        );
+
+        // ============================================
+        // COMPONENTS
+        // ============================================
+
+        // Performance Monitor Component
+        const PerformanceMonitor = () => {
+            const [tick, setTick] = useState(0);
+
+            useEffect(() => {
+                const interval = setInterval(() => setTick(t => t + 1), 500);
+                return () => clearInterval(interval);
+            }, []);
+
+            const selectors = [
+                { name: 'selectBooks', selector: selectBooks },
+                { name: 'selectHorrorBooks', selector: selectHorrorBooks },
+                { name: 'selectFantasyBooks', selector: selectFantasyBooks },
+                { name: 'selectScienceFictionBooks', selector: selectScienceFictionBooks },
+                { name: 'selectMysteryBooks', selector: selectMysteryBooks },
+                { name: 'selectRomanceBooks', selector: selectRomanceBooks },
+            ];
+
+            return (
+                <div className="perf-monitor">
+                    <h4><i className="fas fa-chart-line"></i> Selector Performance</h4>
+                    <div style={{ borderTop: '1px solid var(--border)', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
+                        {selectors.map(({ name, selector }) => {
+                            const calls = selector._meta.callCount();
+                            const hits = selector._meta.cacheHitCount();
+                            const hitRate = calls > 0 ? ((hits / calls) * 100).toFixed(1) : 0;
+                            return (
+                                <div className="perf-stat" key={name}>
+                                    <span style={{fontSize: '0.75rem'}}>{name.replace('select', '')}</span>
+                                    <span className={hits > 0 ? 'selector-hit' : 'selector-miss'}>
+                                        {hits}/{calls} ({hitRate}%)
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div style={{marginTop: '0.5rem', fontSize: '0.7rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '0.5rem'}}>
+                        <i className="fas fa-info-circle"></i> Cache hits = performance gain
+                    </div>
+                </div>
+            );
+        };
+
+        // Book Card Component
+        const BookCard = ({ book }) => {
+            const dispatch = useDispatch();
+            const genreConfig = {
+                horror: { icon: 'fa-ghost', color: 'var(--horror)' },
+                fantasy: { icon: 'fa-dragon', color: 'var(--fantasy)' },
+                scifi: { icon: 'fa-rocket', color: 'var(--scifi)' },
+                mystery: { icon: 'fa-user-secret', color: 'var(--mystery)' },
+                romance: { icon: 'fa-heart', color: 'var(--romance)' }
+            };
+
+            const config = genreConfig[book.genre] || genreConfig.horror;
+
+            return (
+                <div className={`book-card ${book.genre}`} style={{animationDelay: `${book.id * 0.05}s`}}>
+                    <span className="book-id">#{book.id}</span>
+                    <div className={`book-genre-badge ${book.genre}`}>
+                        <i className={`fas ${config.icon}`}></i>
+                        {book.genre}
+                    </div>
+                    <h3 className="book-title">{book.title}</h3>
+                    <div className="book-author">
+                        <i className="fas fa-pen-nib"></i>
+                        {book.author}
+                    </div>
+                    <div className="book-footer">
+                        <div className="book-rating">
+                            <i className="fas fa-star"></i> {book.rating}
+                        </div>
+                        <div className="book-year">
+                            <i className="fas fa-calendar"></i> {book.year}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Stats Bar Component
+        const StatsBar = ({ activeFilter, onFilterChange }) => {
+            const total = useSelector(selectTotalCount);
+            const horror = useSelector(selectHorrorCount);
+            const fantasy = useSelector(selectFantasyCount);
+            const scifi = useSelector(selectScifiCount);
+            const mystery = useSelector(selectMysteryCount);
+            const romance = useSelector(selectRomanceCount);
+
+            const stats = [
+                { key: 'all', label: 'All Books', count: total, icon: 'fa-book' },
+                { key: 'horror', label: 'Horror', count: horror, icon: 'fa-ghost' },
+                { key: 'fantasy', label: 'Fantasy', count: fantasy, icon: 'fa-dragon' },
+                { key: 'scifi', label: 'Sci-Fi', count: scifi, icon: 'fa-rocket' },
+                { key: 'mystery', label: 'Mystery', count: mystery, icon: 'fa-user-secret' },
+                { key: 'romance', label: 'Romance', count: romance, icon: 'fa-heart' },
+            ];
+
+            return (
+                <div className="stats-bar">
+                    {stats.map(stat => (
+                        <div 
+                            key={stat.key}
+                            className={`stat-card ${activeFilter === stat.key ? 'active' : ''}`}
+                            onClick={() => onFilterChange(stat.key)}
+                        >
+                            <div className="stat-icon"><i className={`fas ${stat.icon}`}></i></div>
+                            <div className="stat-count">{stat.count}</div>
+                            <div className="stat-label">{stat.label}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // Genre Tabs Component
+        const GenreTabs = ({ activeFilter, onFilterChange }) => {
+            const total = useSelector(selectTotalCount);
+            const horror = useSelector(selectHorrorCount);
+            const fantasy = useSelector(selectFantasyCount);
+            const scifi = useSelector(selectScifiCount);
+            const mystery = useSelector(selectMysteryCount);
+            const romance = useSelector(selectRomanceCount);
+
+            const tabs = [
+                { key: 'all', label: 'All Books', count: total, icon: 'fa-book' },
+                { key: 'horror', label: 'Horror', count: horror, icon: 'fa-ghost' },
+                { key: 'fantasy', label: 'Fantasy', count: fantasy, icon: 'fa-dragon' },
+                { key: 'scifi', label: 'Science Fiction', count: scifi, icon: 'fa-rocket' },
+                { key: 'mystery', label: 'Mystery', count: mystery, icon: 'fa-user-secret' },
+                { key: 'romance', label: 'Romance', count: romance, icon: 'fa-heart' },
+            ];
+
+            return (
+                <div className="filter-section">
+                    <div className="filter-label">
+                        <i className="fas fa-filter"></i>
+                        Filter by Genre
+                    </div>
+                    <div className="genre-tabs">
+                        {tabs.map(tab => (
+                            <button
+                                key={tab.key}
+                                className={`genre-tab ${tab.key} ${activeFilter === tab.key ? 'active' : ''}`}
+                                onClick={() => onFilterChange(tab.key)}
+                            >
+                                <i className={`fas ${tab.icon}`}></i>
+                                {tab.label}
+                                <span className="count">{tab.count}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // Book List Component
+        const BookList = () => {
+            const dispatch = useDispatch();
+            const filter = useSelector(state => state.filter);
+            const books = useSelector(selectFilteredBooks);
+
+            const genreColors = {
+                all: 'var(--all)',
+                horror: 'var(--horror)',
+                fantasy: 'var(--fantasy)',
+                scifi: 'var(--scifi)',
+                mystery: 'var(--mystery)',
+                romance: 'var(--romance)'
+            };
+
+            const genreLabels = {
+                all: 'All Books',
+                horror: 'Horror',
+                fantasy: 'Fantasy',
+                scifi: 'Science Fiction',
+                mystery: 'Mystery',
+                romance: 'Romance'
+            };
+
+            const handleFilterChange = (genre) => {
+                dispatch(setGenreFilter(genre));
+            };
+
+            return (
+                <div className="app-container">
+                    <header className="header">
+                        <h1><i className="fas fa-book-open"></i> Book Inventory</h1>
+                        <p>Redux Performance Optimization with Memoized Selectors</p>
+                        <div className="redux-badge">
+                            <i className="fas fa-cube"></i>
+                            Powered by Redux + createSelector
+                        </div>
+                    </header>
+
+                    <StatsBar activeFilter={filter} onFilterChange={handleFilterChange} />
+
+                    <GenreTabs activeFilter={filter} onFilterChange={handleFilterChange} />
+
+                    <div className="books-section">
+                        <div className="section-header">
+                            <h2 className="section-title">
+                                <span 
+                                    className="genre-indicator" 
+                                    style={{background: genreColors[filter]}}
+                                ></span>
+                                {genreLabels[filter]}
+                                <span style={{color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '400', marginLeft: '0.5rem'}}>
+                                    ({books.length} {books.length === 1 ? 'book' : 'books'})
+                                </span>
+                            </h2>
+                        </div>
+
+                        {books.length > 0 ? (
+                            <div className="book-grid">
+                                {books.map(book => (
+                                    <BookCard key={book.id} book={book} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="empty-state">
+                                <i className="fas fa-book-open"></i>
+                                <h3>No books found</h3>
+                                <p>No books available in this genre.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <PerformanceMonitor />
+                </div>
+            );
+        };
+
+        // App Component
+        const App = () => {
+            return (
+                <Provider store={store}>
+                    <BookList />
+                </Provider>
+            );
+        };
+
+        // Render
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
