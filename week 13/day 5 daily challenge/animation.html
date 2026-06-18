@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Animations Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            padding: 40px;
+            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Common style for all divs */
+        body > div {
+            width: 483px;
+            height: 298px;
+            background: #676470;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        /* ========================================== */
+        /* 1. Fade In Effect                          */
+        /* ========================================== */
+        .fade {
+            opacity: 0.5;
+        }
+
+        .fade:hover {
+            opacity: 1;
+        }
+
+        /* ========================================== */
+        /* 2. Change Color Effect                     */
+        /* ========================================== */
+        .color:hover {
+            background: #53a7ea;
+        }
+
+        /* ========================================== */
+        /* 3. Grow & Shrink Effect                  */
+        /* ========================================== */
+        .grow:hover {
+            -webkit-transform: scale(1.3);
+            -ms-transform: scale(1.3);
+            transform: scale(1.3);
+        }
+
+        .shrink:hover {
+            -webkit-transform: scale(0.8);
+            -ms-transform: scale(0.8);
+            transform: scale(0.8);
+        }
+
+        /* ========================================== */
+        /* 4. Rotate Effect                           */
+        /* ========================================== */
+        .rotate:hover {
+            -webkit-transform: rotateZ(-30deg);
+            -ms-transform: rotateZ(-30deg);
+            transform: rotateZ(-30deg);
+        }
+
+        /* ========================================== */
+        /* 5. Square to Circle Effect               */
+        /* ========================================== */
+        .circle:hover {
+            border-radius: 50%;
+        }
+
+        /* ========================================== */
+        /* 6. 3D Shadow Effect                        */
+        /* ========================================== */
+        .threed:hover {
+            box-shadow:
+                1px 1px #53a7ea,
+                2px 2px #53a7ea,
+                3px 3px #53a7ea;
+            -webkit-transform: translateX(-3px);
+            transform: translateX(-3px);
+        }
+
+        /* ========================================== */
+        /* 7. Swing Effect (Keyframes)                */
+        /* ========================================== */
+        @-webkit-keyframes swing {
+            15% {
+                -webkit-transform: translateX(5px);
+                transform: translateX(5px);
+            }
+            30% {
+                -webkit-transform: translateX(-5px);
+                transform: translateX(-5px);
+            }
+            50% {
+                -webkit-transform: translateX(3px);
+                transform: translateX(3px);
+            }
+            65% {
+                -webkit-transform: translateX(-3px);
+                transform: translateX(-3px);
+            }
+            80% {
+                -webkit-transform: translateX(2px);
+                transform: translateX(2px);
+            }
+            100% {
+                -webkit-transform: translateX(0);
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes swing {
+            15% {
+                -webkit-transform: translateX(5px);
+                transform: translateX(5px);
+            }
+            30% {
+                -webkit-transform: translateX(-5px);
+                transform: translateX(-5px);
+            }
+            50% {
+                -webkit-transform: translateX(3px);
+                transform: translateX(3px);
+            }
+            65% {
+                -webkit-transform: translateX(-3px);
+                transform: translateX(-3px);
+            }
+            80% {
+                -webkit-transform: translateX(2px);
+                transform: translateX(2px);
+            }
+            100% {
+                -webkit-transform: translateX(0);
+                transform: translateX(0);
+            }
+        }
+
+        .swing:hover {
+            -webkit-animation: swing 1s ease;
+            animation: swing 1s ease;
+            -webkit-animation-iteration-count: 1;
+            animation-iteration-count: 1;
+        }
+
+        /* ========================================== */
+        /* 8. Inset Border Effect                     */
+        /* ========================================== */
+        .border {
+            background: transparent;
+            border: 4px solid #676470;
+            color: #676470;
+        }
+
+        .border:hover {
+            box-shadow: inset 0 0 0 25px #53a7ea;
+            color: white;
+            border-color: #53a7ea;
+        }
+    </style>
+</head>
+<body>
+    <!-- 1. Fade In -->
+    <div class="fade">1. Fade In</div>
+
+    <!-- 2. Change Color -->
+    <div class="color">2. Change Color</div>
+
+    <!-- 3. Grow -->
+    <div class="grow">3. Grow</div>
+
+    <!-- 4. Shrink -->
+    <div class="shrink">4. Shrink</div>
+
+    <!-- 5. Rotate -->
+    <div class="rotate">5. Rotate</div>
+
+    <!-- 6. Square to Circle -->
+    <div class="circle">6. Square to Circle</div>
+
+    <!-- 7. 3D Shadow -->
+    <div class="threed">7. 3D Shadow</div>
+
+    <!-- 8. Swing -->
+    <div class="swing">8. Swing</div>
+
+    <!-- 9. Inset Border -->
+    <div class="border">9. Inset Border</div>
+</body>
+</html>

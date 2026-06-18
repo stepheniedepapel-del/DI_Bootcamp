@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Pattern Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            height: 500px;
+            display: grid;
+            grid-template-columns: 120px 1fr 1fr 1fr 1fr 120px;
+            grid-template-rows: repeat(4, 1fr);
+            gap: 15px;
+            padding: 20px;
+        }
+
+        .square {
+            width: 120px;
+            height: 100px;
+            background-color: #ffff00;
+            border: 3px solid #000000;
+        }
+
+        /* Left column */
+        .l1 { grid-column: 1; grid-row: 1; }
+        .l2 { grid-column: 1; grid-row: 2; }
+        .l3 { grid-column: 1; grid-row: 3; }
+        .l4 { grid-column: 1; grid-row: 4; }
+
+        /* Center row */
+        .c1 { grid-column: 2; grid-row: 2; justify-self: center; }
+        .c2 { grid-column: 3; grid-row: 2; justify-self: center; }
+        .c3 { grid-column: 4; grid-row: 2; justify-self: center; }
+        .c4 { grid-column: 5; grid-row: 2; justify-self: center; }
+
+        /* Right column */
+        .r1 { grid-column: 6; grid-row: 1; justify-self: end; }
+        .r2 { grid-column: 6; grid-row: 2; justify-self: end; }
+        .r3 { grid-column: 6; grid-row: 3; justify-self: end; }
+        .r4 { grid-column: 6; grid-row: 4; justify-self: end; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left column -->
+        <div class="square l1"></div>
+        <div class="square l2"></div>
+        <div class="square l3"></div>
+        <div class="square l4"></div>
+        
+        <!-- Center row -->
+        <div class="square c1"></div>
+        <div class="square c2"></div>
+        <div class="square c3"></div>
+        <div class="square c4"></div>
+        
+        <!-- Right column -->
+        <div class="square r1"></div>
+        <div class="square r2"></div>
+        <div class="square r3"></div>
+        <div class="square r4"></div>
+    </div>
+</body>
+</html>
